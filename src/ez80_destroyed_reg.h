@@ -1,7 +1,6 @@
 #ifndef EZ80_DESTROYED_REG
 #define EZ80_DESTROYED_REG
 
-#include "instruction.h"
 #include "ez80_instruction.h"
 #include "ez80_instruction_info.h"
 

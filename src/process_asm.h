@@ -1,8 +1,7 @@
 #ifndef PROCESS_ASM_H
 #define PROCESS_ASM_H
 
-#include "instruction.h"
-#include "ez80_type.h"
+#include "ez80_instruction.h"
 #include "ez80_instruction_info.h"
 #include "text.h"
 
@@ -1642,6 +1641,12 @@ void handle_load(
 				case IY : { output.op_code =   LD_IY_PIX; } break;
 				default: break;
 			}
+			if (str.size() == 3) {
+				output.offset = 0;
+				output.known_value = true;
+				return;
+			}
+			set_index_register_offset(output, str, 3);
 		} break;
 		case PIY: {
 			switch (dst) {
@@ -1659,6 +1664,12 @@ void handle_load(
 				case IY : { output.op_code =   LD_IY_PIY; } break;
 				default: break;
 			}
+			if (str.size() == 3) {
+				output.offset = 0;
+				output.known_value = true;
+				return;
+			}
+			set_index_register_offset(output, str, 3);
 		} break;
 		case I: {
 			switch (dst) {

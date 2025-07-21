@@ -15,7 +15,7 @@ set(CMAKE_CXX_COMPILER "clang++")
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
 
-file(GLOB SRC_FILES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
+file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
 # Create an executable
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 

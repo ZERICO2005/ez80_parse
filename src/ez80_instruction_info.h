@@ -2,34 +2,8 @@
 #define EZ80_INSTRUCTION_INFO_H
 
 #include "ez80_type.h"
-#include "instruction.h"
 #include "ez80_instruction.h"
-
-enum class ez80_reg {
-	NONE,
-	A,
-	B,
-	C,
-	D,
-	E,
-	H,
-	L,
-	IXL,
-	IXH,
-	IYL,
-	IYH,
-	UBC,
-	UDE,
-	UHL,
-	UIX,
-	UIY,
-	BC,
-	DE,
-	HL,
-	IX,
-	IY,
-	SP,
-};
+#include "ez80_reg.h"
 
 union ez80_flags {
 	struct {

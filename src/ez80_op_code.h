@@ -1,12 +1,11 @@
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
+#ifndef EZ80_OP_CODE_H
+#define EZ80_OP_CODE_H
 
 #include "ez80_type.h"
 #include <string>
 using std::string;
 
 enum class ez80_op_code {
-	/*                           | B  F  R  W  C */
 	UNKNOWN,
 
 	/* Unary */
@@ -1104,33 +1103,4 @@ enum class ez80_op_code {
 	COUNT,
 };
 
-enum class ez80_modifier {
-	NONE,
-	AUTO = NONE,
-	S,
-	L,
-	IS,
-	IL,
-	SIS,
-	LIL,
-	SIL,
-	LIS,
-};
-
-struct ez80_instruction {
-	ez80_op_code op_code;
-	// ez80_modifier modifer;
-	int8_t offset;
-	uint24_t value;
-	bool known_value;
-	string symbol;
-	ez80_instruction() {
-		op_code = ez80_op_code::UNKNOWN;
-		// modifer = ez80_modifier::NONE;
-		offset = 0;
-		value = 0;
-		known_value = false;
-	}
-};
-
-#endif /* INSTRUCTION_H */
+#endif /* EZ80_OP_CODE_H */

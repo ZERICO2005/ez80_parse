@@ -1,7 +1,6 @@
 #ifndef EZ80_OBSERVED_REG
 #define EZ80_OBSERVED_REG
 
-#include "instruction.h"
 #include "ez80_instruction.h"
 #include "ez80_instruction_info.h"
 

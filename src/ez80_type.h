@@ -1,7 +1,7 @@
 #ifndef EZ80_TYPE_H
 #define EZ80_TYPE_H
 
-#define ARRAY_LEN(x) (sizeof(x) / sizeof((x)[0]))
+#include "common_util.h"
 
 #include <stdint.h>
 

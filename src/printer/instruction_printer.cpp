@@ -1,10 +1,7 @@
-#ifndef INSTRUCTION_PRINTER_H
-#define INSTRUCTION_PRINTER_H
-
-#include "instruction.h"
-#include "ez80_type.h"
-#include "ez80_instruction_info.h"
-#include "text.h"
+#include "../ez80_instruction.h"
+#include "../ez80_type.h"
+#include "../ez80_instruction_info.h"
+#include "../text.h"
 
 #include <string>
 #include <vector>
@@ -12,11 +9,7 @@
 #include <stdio.h>
 #include <cmath>
 
-using std::string;
-using std::vector;
-using std::array;
-using std::min;
-using std::max;
+#include "../common_std.h"
 
 inline string symbol_str(const string& str) {
 	if (str.empty()) {
@@ -76,7 +69,7 @@ inline string imm24_value_str(const ez80_instruction& x) {
 	return buf;
 }
 
-inline string instruction_to_string(ez80_instruction x) {
+string instruction_to_string(ez80_instruction x) {
 	using enum ez80_op_code;
 	switch (x.op_code) {
 		case NOP: return "nop";
@@ -339,7 +332,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* Accumulate Arithmetic */
 	
-		case ADD_A_N: return "add\ta, n";
+		case ADD_A_N: return "add\ta, " + imm8_value_str(x);
 		case ADD_A_A: return "add\ta, a";
 		case ADD_A_B: return "add\ta, b";
 		case ADD_A_C: return "add\ta, c";
@@ -355,7 +348,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case ADD_A_PIX: return "add\ta, (ix" + imm8_offset_str(x) + ")";
 		case ADD_A_PIY: return "add\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case ADC_A_N: return "adc\ta, n";
+		case ADC_A_N: return "adc\ta, " + imm8_value_str(x);
 		case ADC_A_A: return "adc\ta, a";
 		case ADC_A_B: return "adc\ta, b";
 		case ADC_A_C: return "adc\ta, c";
@@ -371,7 +364,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case ADC_A_PIX: return "adc\ta, (ix" + imm8_offset_str(x) + ")";
 		case ADC_A_PIY: return "adc\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case SUB_A_N: return "sub\ta, n";
+		case SUB_A_N: return "sub\ta, " + imm8_value_str(x);
 		case SUB_A_A: return "sub\ta, a";
 		case SUB_A_B: return "sub\ta, b";
 		case SUB_A_C: return "sub\ta, c";
@@ -387,7 +380,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case SUB_A_PIX: return "sub\ta, (ix" + imm8_offset_str(x) + ")";
 		case SUB_A_PIY: return "sub\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case SBC_A_N: return "sbc\ta, n";
+		case SBC_A_N: return "sbc\ta, " + imm8_value_str(x);
 		case SBC_A_A: return "sbc\ta, a";
 		case SBC_A_B: return "sbc\ta, b";
 		case SBC_A_C: return "sbc\ta, c";
@@ -403,7 +396,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case SBC_A_PIX: return "sbc\ta, (ix" + imm8_offset_str(x) + ")";
 		case SBC_A_PIY: return "sbc\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case CP_A_N: return "cp\ta, n";
+		case CP_A_N: return "cp\ta, " + imm8_value_str(x);
 		case CP_A_A: return "cp\ta, a";
 		case CP_A_B: return "cp\ta, b";
 		case CP_A_C: return "cp\ta, c";
@@ -421,7 +414,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* Accumulate Logical */
 	
-		case AND_A_N: return "and\ta, n";
+		case AND_A_N: return "and\ta, " + imm8_value_str(x);
 		case AND_A_A: return "and\ta, a";
 		case AND_A_B: return "and\ta, b";
 		case AND_A_C: return "and\ta, c";
@@ -437,7 +430,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case AND_A_PIX: return "and\ta, (ix" + imm8_offset_str(x) + ")";
 		case AND_A_PIY: return "and\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case OR_A_N: return "or\ta, n";
+		case OR_A_N: return "or\ta, " + imm8_value_str(x);
 		case OR_A_A: return "or\ta, a";
 		case OR_A_B: return "or\ta, b";
 		case OR_A_C: return "or\ta, c";
@@ -453,7 +446,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case OR_A_PIX: return "or\ta, (ix" + imm8_offset_str(x) + ")";
 		case OR_A_PIY: return "or\ta, (iy" + imm8_offset_str(x) + ")";
 	
-		case XOR_A_N: return "xor\ta, n";
+		case XOR_A_N: return "xor\ta, " + imm8_value_str(x);
 		case XOR_A_A: return "xor\ta, a";
 		case XOR_A_B: return "xor\ta, b";
 		case XOR_A_C: return "xor\ta, c";
@@ -471,7 +464,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* Test A */
 	
-		case TST_A_N: return "tst\ta, n";
+		case TST_A_N: return "tst\ta, " + imm8_value_str(x);
 		case TST_A_A: return "tst\ta, a";
 		case TST_A_B: return "tst\ta, b";
 		case TST_A_C: return "tst\ta, c";
@@ -562,7 +555,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* load register A */
 	
-		case LD_A_N: return "ld\ta, n";
+		case LD_A_N: return "ld\ta, " + imm8_value_str(x);
 		case LD_A_A: return "ld\ta, a";
 		case LD_A_B: return "ld\ta, b";
 		case LD_A_C: return "ld\ta, c";
@@ -584,7 +577,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* load B C D E */
 	
-		case LD_B_N: return "ld\tb, n";
+		case LD_B_N: return "ld\tb, " + imm8_value_str(x);
 		case LD_B_A: return "ld\tb, a";
 		case LD_B_C: return "ld\tb, c";
 		case LD_B_D: return "ld\tb, d";
@@ -599,7 +592,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_B_PIX: return "ld\tb, (ix" + imm8_offset_str(x) + ")";
 		case LD_B_PIY: return "ld\tb, (iy" + imm8_offset_str(x) + ")";
 	
-		case LD_C_N: return "ld\tc, n";
+		case LD_C_N: return "ld\tc, " + imm8_value_str(x);
 		case LD_C_A: return "ld\tc, a";
 		case LD_C_B: return "ld\tc, b";
 		case LD_C_D: return "ld\tc, d";
@@ -614,7 +607,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_C_PIX: return "ld\tc, (ix" + imm8_offset_str(x) + ")";
 		case LD_C_PIY: return "ld\tc, (iy" + imm8_offset_str(x) + ")";
 	
-		case LD_D_N: return "ld\td, n";
+		case LD_D_N: return "ld\td, " + imm8_value_str(x);
 		case LD_D_A: return "ld\td, a";
 		case LD_D_B: return "ld\td, b";
 		case LD_D_C: return "ld\td, c";
@@ -629,7 +622,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_D_PIX: return "ld\td, (ix" + imm8_offset_str(x) + ")";
 		case LD_D_PIY: return "ld\td, (iy" + imm8_offset_str(x) + ")";
 	
-		case LD_E_N: return "ld\te, n";
+		case LD_E_N: return "ld\te, " + imm8_value_str(x);
 		case LD_E_A: return "ld\te, a";
 		case LD_E_B: return "ld\te, b";
 		case LD_E_C: return "ld\te, c";
@@ -646,7 +639,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* load H L */
 	
-		case LD_H_N: return "ld\th, n";
+		case LD_H_N: return "ld\th, " + imm8_value_str(x);
 		case LD_H_A: return "ld\th, a";
 		case LD_H_B: return "ld\th, b";
 		case LD_H_C: return "ld\th, c";
@@ -658,7 +651,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_H_PIX: return "ld\th, (ix" + imm8_offset_str(x) + ")";
 		case LD_H_PIY: return "ld\th, (iy" + imm8_offset_str(x) + ")";
 	
-		case LD_L_N: return "ld\tl, n";
+		case LD_L_N: return "ld\tl, " + imm8_value_str(x);
 		case LD_L_A: return "ld\tl, a";
 		case LD_L_B: return "ld\tl, b";
 		case LD_L_C: return "ld\tl, c";
@@ -672,7 +665,7 @@ inline string instruction_to_string(ez80_instruction x) {
 	
 		/* load IXL IXH IYL IYH */
 	
-		case LD_IXH_N: return "ld\tixh, n";
+		case LD_IXH_N: return "ld\tixh, " + imm8_value_str(x);
 		case LD_IXH_A: return "ld\tixh, a";
 		case LD_IXH_B: return "ld\tixh, b";
 		case LD_IXH_C: return "ld\tixh, c";
@@ -681,7 +674,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_IXH_IXH: return "ld\tixh, ixh";
 		case LD_IXH_IXL: return "ld\tixh, ixl";
 	
-		case LD_IXL_N: return "ld\tixl, n";
+		case LD_IXL_N: return "ld\tixl, " + imm8_value_str(x);
 		case LD_IXL_A: return "ld\tixl, a";
 		case LD_IXL_B: return "ld\tixl, b";
 		case LD_IXL_C: return "ld\tixl, c";
@@ -690,7 +683,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_IXL_IXH: return "ld\tixl, ixh";
 		case LD_IXL_IXL: return "ld\tixl, ixl";
 	
-		case LD_IYH_N: return "ld\tiyh, n";
+		case LD_IYH_N: return "ld\tiyh, " + imm8_value_str(x);
 		case LD_IYH_A: return "ld\tiyh, a";
 		case LD_IYH_B: return "ld\tiyh, b";
 		case LD_IYH_C: return "ld\tiyh, c";
@@ -699,7 +692,7 @@ inline string instruction_to_string(ez80_instruction x) {
 		case LD_IYH_IYH: return "ld\tiyh, iyh";
 		case LD_IYH_IYL: return "ld\tiyh, iyl";
 	
-		case LD_IYL_N: return "ld\tiyl, n";
+		case LD_IYL_N: return "ld\tiyl, " + imm8_value_str(x);
 		case LD_IYL_A: return "ld\tiyl, a";
 		case LD_IYL_B: return "ld\tiyl, b";
 		case LD_IYL_C: return "ld\tiyl, c";
@@ -1171,5 +1164,3 @@ inline string instruction_to_string(ez80_instruction x) {
 		default: return "unknown";
 	}
 }
-
-#endif /* INSTRUCTION_PRINTER_H */
