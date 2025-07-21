@@ -1,0 +1,7 @@
+build
+desktop.ini
+.vscode
+.vs
+imgui.ini
+.cache
+src/input_asm.h
