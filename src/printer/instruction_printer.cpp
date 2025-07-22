@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <cmath>
 
+#include "../ez80_asm.h"
+#include "../ez80_parse.h"
 #include "../common_std.h"
 
 inline string symbol_str(const string& str) {
@@ -1163,4 +1165,42 @@ string instruction_to_string(ez80_instruction x) {
 
 		default: return "unknown";
 	}
+}
+
+void print_program(const ez80_program& x) {
+	const vector<asm_line>& code = x.prog;
+	for (size_t i = 0; i < code.size(); i++) {
+		const asm_line& line = code[i];
+		switch (line.line_type) {
+			case asm_line_type::blank: {
+				break;
+			} break;
+			case asm_line_type::instruction: {
+				printf("\t%s\n", instruction_to_string(line.instruction).c_str());
+			} break;
+			default: {
+				printf("%s\n", line.text.c_str());
+			} break;
+		}
+	}
+}
+
+string code_section_to_string(const ez80_code_section& x) {
+	string output = "";
+	const list<ez80_code>& prog = x.prog;
+	for (ez80_code code : prog) {
+		switch (code.type) {
+			case ez80_code_type::code: {
+				output += "\t" + instruction_to_string(code.instruction) + "\n";
+			} break;
+			case ez80_code_type::label: {
+				output += code.label.text + "\n";
+			} break;
+			case ez80_code_type::directive: {
+				output += "directive\n";
+			} break;
+			default: break;
+		}
+	}
+	return output;
 }

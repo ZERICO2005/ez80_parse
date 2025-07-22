@@ -15,6 +15,14 @@
 
 string instruction_to_string(ez80_instruction x);
 
-void parse_asm(const string& input, vector<asm_line>& output);
+void parse_asm(ez80_program& output, const string& input);
+
+void optimize_asm(ez80_code_section& program);
+
+void process_asm(ez80_code_section& output, const ez80_program& input);
+
+void print_program(const ez80_program& program);
+
+string code_section_to_string(const ez80_code_section& x);
 
 #endif /* EZ80_PARSE */

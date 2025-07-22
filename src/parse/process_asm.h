@@ -1,60 +1,10 @@
 #ifndef PROCESS_ASM_H
 #define PROCESS_ASM_H
 
-#include "ez80_instruction.h"
-#include "ez80_instruction_info.h"
-#include "text.h"
-
-#include <string>
-#include <vector>
-#include <algorithm>
-
-using std::string;
-using std::vector;
-using std::array;
-using std::min;
-using std::max;
-
-bool contains_ctype(const string& str, int (&ctype_func)(int)) {
-    for (char ch : str) {
-        if ((ctype_func)(static_cast<unsigned char>(ch))) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool case_insensetive_word_compare(const char* str, const char* word) {
-	while (*str != '\0' && *word != '\0') {
-		if (toupper(*str) != toupper(*word)) {
-			return false;
-		}
-		str++;
-		word++;
-	}
-	if (*str == '\0' && *word == '\0') {
-		return true;
-	}
-	if (*str == '\0') {
-		return false;
-	}
-	if (isalnum(*str) || *str == '.' || *str == '_') {
-		return false;
-	}
-	return true;
-}
-
-bool find_in_list(size_t& index, const string& str, char const * const str_list[], size_t list_len) {
-	for (size_t i = 0; i < list_len; i++) {
-		char const * item = str_list[i];
-		bool cmp = case_insensetive_word_compare(str.c_str(), item);
-		if (cmp) {
-			index = i;
-			return true;
-		}
-	}
-	return false;
-}
+#include "../ez80_instruction.h"
+#include "../ez80_instruction_info.h"
+#include "../text.h"
+#include "../text_util.h"
 
 void set_index_register_offset(ez80_instruction& output, const vector<string>& str, size_t offset) {
 	if (offset >= str.size()) {
@@ -819,6 +769,14 @@ void handle_bit_manipulation(
 	}
 	int bit = strtol(str[1].c_str(), nullptr, 10);
 	ez80_argument_name arg = (ez80_argument_name)index;
+	if (arg == PIX || arg == PIY) {
+		if (str.size() == 3) {
+			output.offset = 0;
+			output.known_value = true;
+		} else {
+			set_index_register_offset(output, str, 4);
+		}
+	}
 	switch (oper) {
 		using enum ez80_op_code;
 		case SET: {
@@ -939,7 +897,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = SET_7_PIX; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				case PIY : {
 					switch (bit) {
@@ -953,7 +910,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = SET_7_PIY; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				default: break;
 			}
@@ -1076,7 +1032,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = RES_7_PIX; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				case PIY : {
 					switch (bit) {
@@ -1090,7 +1045,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = RES_7_PIY; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				default: break;
 			}
@@ -1213,7 +1167,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = BIT_7_PIX; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				case PIY : {
 					switch (bit) {
@@ -1227,7 +1180,6 @@ void handle_bit_manipulation(
 						case 7: { output.op_code = BIT_7_PIY; } break;
 						default: break;
 					}
-					set_index_register_offset(output, str, 4);
 				} break;
 				default: break;
 			}
@@ -1385,6 +1337,12 @@ void handle_load(
 			default: break;
 		}
 		return;
+	}
+	if (dst == PIX || dst == PIY) {
+		if (str.size() == 3) {
+			output.offset = 0;
+			output.known_value = true;
+		}
 	}
 	switch (src) {
 		using enum ez80_op_code;

@@ -24,9 +24,7 @@
 #include "../ez80_instruction_info.h"
 #include "../text.h"
 
-#include "../process_asm.h"
-
-#include "../known_state.h"
+#include "process_asm.h"
 
 #include "../common_std.h"
 
@@ -34,12 +32,7 @@
 
 #include "../ez80_asm.h"
 
-char str_retrive(const string& line, size_t index) {
-	if (index >= line.size()) {
-		return '\0';
-	}
-	return line[index];
-}
+#include "../text_util.h"
 
 static void clean_string(string& line) {
 	char const * const whitespace_list = " \t\n\r\f\v";
@@ -188,42 +181,6 @@ bool is_label_valid(const string& str) {
 	#endif
 }
 
-string visualize_escape_codes(const string& str) {
-	string ret = "";
-    for (char ch : str) {
-		if (ch == '\'') {
-			ret += "\\\'";
-			continue;
-		}
-		if (ch == '\"') {
-			ret += "\\\"";
-			continue;
-		}
-		if (ch == '\\') {
-			ret += "\\\\";
-			continue;
-		}
-        if (isprint(ch)) {
-            ret += ch;
-			continue;
-        }
-		switch (ch) {
-			case '\0': { ret += "\\0"; } break;
-			case '\t': { ret += "\\t"; } break;
-			case '\n': { ret += "\\n"; } break;
-			case '\r': { ret += "\\r"; } break;
-			case '\f': { ret += "\\f"; } break;
-			case '\v': { ret += "\\v"; } break;
-			default: {
-				char buf[10];
-				snprintf(buf, sizeof(buf), "\\x%02X", ch);
-				ret += buf;
-			} break;
-		}
-    }
-	return ret;
-}
-
 asm_line_type process_first_word(size_t& index, string str) {
 	bool found;
 	found = find_in_list(index, str, asm_directives, ARRAY_LEN(asm_directives));
@@ -370,7 +327,8 @@ bool construct_asm_line(string& line, size_t line_number, asm_line& output) {
 		return false;
 	}
 	size_t index;
-	asm_line_type line_type = process_first_word(index, line);
+	const asm_line_type line_type = process_first_word(index, line);
+	output.line_type = line_type;
 	if (line_type == asm_line_type::blank) {
 		printf(
 			"Warning(L%zu): Blank: \"%s\"\n",
@@ -380,13 +338,16 @@ bool construct_asm_line(string& line, size_t line_number, asm_line& output) {
 		return false;
 	}
 	if (line_type == asm_line_type::directive) {
-		printf("Directive: %s\n", asm_directives[index]);
+		// printf("Directive: %s\n", asm_directives[index]);
 		return true;
 	}
 	if (line_type == asm_line_type::instruction) {
 		parse_line(line, output.instruction);
 		if (output.instruction.op_code != ez80_op_code::UNKNOWN) {
-			printf("\t%s\n", instruction_to_string(output.instruction).c_str());
+			string text = instruction_to_string(output.instruction).c_str();
+			if (text.find("unknown") != string::npos) {
+				printf("%7zu: %s\n", output.line_number, text.c_str());
+			}
 			return true;
 		} else {
 			#if 0
@@ -407,115 +368,24 @@ bool construct_asm_line(string& line, size_t line_number, asm_line& output) {
 	return false;
 }
 
-void parse_asm(const string& input, vector<asm_line>& output) {
+void parse_asm(ez80_program& output, const string& input) {
 	std::istringstream stream(input);
 	string line;
 	size_t line_number = 0;
 
 	while (std::getline(stream, line)) {
 		++line_number;
+		asm_line new_line;
+		new_line.text = line;
 		clean_string(line);
 		if (line.empty()) {
 			continue;
 		}
-		asm_line new_line;
 		new_line.line_number = line_number;
 		bool valid = construct_asm_line(line, line_number, new_line);
 		if (!valid) {
 			continue;
 		}
-		output.push_back(new_line);
+		output.prog.push_back(new_line);
 	}
 }
-
-enum Instruction_Type {
-	/* multiple width arithmetic */
-	ADD_8,
-	ADD_16,
-	ADD_24,
-	ADC_8,
-	ADC_16,
-	ADC_24,
-	SBC_8,
-	SBC_16,
-	SBC_24,
-	/* accumulator */
-	SUB,
-	CP,
-	AND,
-	OR,
-	XOR,
-	TST,
-	/* increment/decrement */
-	INC_8,
-	INC_16,
-	INC_24,
-	DEC_8,
-	DEC_16,
-	DEC_24,
-	/* bitwise */
-	BIT,
-	SET,
-	RES,
-	/* unary */
-	NOP,
-	CCF,
-	SCF,
-	CPL,
-	DAA,
-	NEG,
-	RLA,
-	RRA,
-	RLCA,
-	RRCA,
-	/* multiply */
-	MLT,
-	/* shifts */
-	SLA,
-	SRA,
-	SRL,
-	RL,
-	RR,
-	RLC,
-	RRC,
-	RLD,
-	RRD,
-	/* block functions */
-	CPI,
-	CPIR,
-	CPD,
-	CPDR,
-	LDI,
-	LDIR,
-	LDD,
-	LDDR,
-	/* control flow */
-	JP_REG,
-	JP,
-	JP_CC,
-	CALL,
-	CALL_CC,
-	JR,
-	JR_CC,
-	DJNZ,
-	/* return */
-	RET,
-	RET_CC,
-	/* exchange */
-	EX_DE_HL,
-	EXX,
-	EX_AF,
-	/* stack operations */
-	PUSH,
-	POP,
-	EX_SP,
-	PEA,
-	/* load */
-	LEA,
-	LD_REG_8,
-	LD_REG_16,
-	LD_REG_24,
-	LD_ADDR_16,
-	LD_ADDR_24,
-	LD_INDR,
-};
