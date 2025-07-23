@@ -372,17 +372,23 @@ void optimize_asm(ez80_code_section& program) {
 				// 	ez80_known_function_name[(size_t)current.known_func]
 				// );
 				state.next_known_func(current.known_func);
+				printf(
+					"%6zu: %s | %s\n",
+					current.original_line,
+					state.print_state().c_str(),
+					instruction_to_string(current.instruction).c_str()
+				);
 			} break;
 			case branch:
 			case code:
 			{
 				state.next_instruction(current.instruction);
-				// printf(
-				// 	"%6zu: %s | %s\n",
-				// 	current.original_line,
-				// 	state.print_state().c_str(),
-				// 	instruction_to_string(current.instruction).c_str()
-				// );
+				printf(
+					"%6zu: %s | %s\n",
+					current.original_line,
+					state.print_state().c_str(),
+					instruction_to_string(current.instruction).c_str()
+				);
 			} break;
 			case label:
 			{

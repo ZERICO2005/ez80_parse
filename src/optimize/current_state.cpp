@@ -96,191 +96,92 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			C.set_unknown();
 		} break;
 
-		case POP_AF: {
-			A.set_unknown();
-			F.set_flags_unknown();
-		} break;
-		case POP_BC: {
-			UBC.set_unknown();
-			B.set_unknown();
-			C.set_unknown();
-		} break;
-		case POP_DE: {
-			UDE.set_unknown();
-			D.set_unknown();
-			E.set_unknown();
-		} break;
-		case POP_HL: {
-			UHL.set_unknown();
-			H.set_unknown();
-			L.set_unknown();
-		} break;
-		case POP_IX: {
-			UIX.set_unknown();
-			IXH.set_unknown();
-			IXL.set_unknown();
-		} break;
-		case POP_IY: {
-			UIY.set_unknown();
-			IYH.set_unknown();
-			IYL.set_unknown();
-		} break;
+		case POP_AF: { set_AF(pop_stack()); } break;
+		case POP_BC: { set_BC(pop_stack()); } break;
+		case POP_DE: { set_DE(pop_stack()); } break;
+		case POP_HL: { set_HL(pop_stack()); } break;
+		case POP_IX: { set_IX(pop_stack()); } break;
+		case POP_IY: { set_IY(pop_stack()); } break;
 		case EX_SP_HL: {
-			UHL.set_unknown();
-			H.set_unknown();
-			L.set_unknown();
+			set_HL(ex_stack(get_HL()));
 		} break;
 		case EX_SP_IX: {
-			UIX.set_unknown();
-			IXH.set_unknown();
-			IXL.set_unknown();
+			set_IX(ex_stack(get_IX()));
 		} break;
 		case EX_SP_IY: {
-			UIY.set_unknown();
-			IYH.set_unknown();
-			IYL.set_unknown();
+			set_IY(ex_stack(get_IY()));
 		} break;
 		case INC_BC: {
-			reg24_pair reg;
-			reg.set_value(UBC, B, C);
-			++reg;
-			reg.split_value(UBC, B, C);
+			set_BC(++get_BC());
 		} break;
 		case INC_DE: {
-			reg24_pair reg;
-			reg.set_value(UDE, D, E);
-			++reg;
-			reg.split_value(UDE, D, E);
+			set_DE(++get_DE());
 		} break;
 		case INC_HL: {
-			reg24_pair reg;
-			reg.set_value(UHL, H, L);
-			++reg;
-			reg.split_value(UHL, H, L);
+			set_HL(++get_HL());
 		} break;
 		case INC_SP: {
 			SP_set_unknown();
 		} break;
 		case INC_IX: {
-			reg24_pair reg;
-			reg.set_value(UIX, IXH, IXL);
-			++reg;
-			reg.split_value(UIX, IXH, IXL);
+			set_IX(++get_IX());
 		} break;
 		case INC_IY: {
-			reg24_pair reg;
-			reg.set_value(UIY, IYH, IYL);
-			++reg;
-			reg.split_value(UIY, IYH, IYL);
+			set_IY(++get_IY());
 		} break;
 		case INC_BC_SIS: {
-			reg24_pair reg;
-			reg.set_value(UBC, B, C);
-			++reg;
-			reg.clear_upper();
-			reg.split_value(UBC, B, C);
+			set16_zero_BC(++get16_BC());
 		} break;
 		case INC_DE_SIS: {
-			reg24_pair reg;
-			reg.set_value(UDE, D, E);
-			++reg;
-			reg.clear_upper();
-			reg.split_value(UDE, D, E);
+			set16_zero_DE(++get16_DE());
 		} break;
 		case INC_HL_SIS: {
-			reg24_pair reg;
-			reg.set_value(UHL, H, L);
-			++reg;
-			reg.clear_upper();
-			reg.split_value(UHL, H, L);
+			set16_zero_HL(++get16_HL());
 		} break;
 		case INC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case INC_IX_SIS: {
-			reg24_pair reg;
-			reg.set_value(UIX, IXH, IXL);
-			++reg;
-			reg.clear_upper();
-			reg.split_value(UIX, IXH, IXL);
+			set16_zero_IX(++get16_IX());
 		} break;
 		case INC_IY_SIS: {
-			reg24_pair reg;
-			reg.set_value(UIY, IYH, IYL);
-			++reg;
-			reg.clear_upper();
-			reg.split_value(UIY, IYH, IYL);
+			set16_zero_IY(++get16_IY());
 		} break;
 		case DEC_BC: {
-			reg24_pair reg;
-			reg.set_value(UBC, B, C);
-			--reg;
-			reg.split_value(UBC, B, C);
+			set_BC(--get_BC());
 		} break;
 		case DEC_DE: {
-			reg24_pair reg;
-			reg.set_value(UDE, D, E);
-			--reg;
-			reg.split_value(UDE, D, E);
+			set_DE(--get_DE());
 		} break;
 		case DEC_HL: {
-			reg24_pair reg;
-			reg.set_value(UHL, H, L);
-			--reg;
-			reg.split_value(UHL, H, L);
+			set_HL(--get_HL());
 		} break;
 		case DEC_SP: {
 			SP_set_unknown();
 		} break;
 		case DEC_IX: {
-			reg24_pair reg;
-			reg.set_value(UIX, IXH, IXL);
-			--reg;
-			reg.split_value(UIX, IXH, IXL);
+			set_IX(--get_IX());
 		} break;
 		case DEC_IY: {
-			reg24_pair reg;
-			reg.set_value(UIY, IYH, IYL);
-			--reg;
-			reg.split_value(UIY, IYH, IYL);
+			set_IY(--get_IY());
 		} break;
 		case DEC_BC_SIS: {
-			reg24_pair reg;
-			reg.set_value(UBC, B, C);
-			--reg;
-			reg.clear_upper();
-			reg.split_value(UBC, B, C);
+			set16_zero_BC(--get16_BC());
 		} break;
 		case DEC_DE_SIS: {
-			reg24_pair reg;
-			reg.set_value(UDE, D, E);
-			--reg;
-			reg.clear_upper();
-			reg.split_value(UDE, D, E);
+			set16_zero_DE(--get16_DE());
 		} break;
 		case DEC_HL_SIS: {
-			reg24_pair reg;
-			reg.set_value(UHL, H, L);
-			--reg;
-			reg.clear_upper();
-			reg.split_value(UHL, H, L);
+			set16_zero_HL(--get16_HL());
 		} break;
 		case DEC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case DEC_IX_SIS: {
-			reg24_pair reg;
-			reg.set_value(UIX, IXH, IXL);
-			--reg;
-			reg.clear_upper();
-			reg.split_value(UIX, IXH, IXL);
+			set16_zero_IX(--get16_IX());
 		} break;
 		case DEC_IY_SIS: {
-			reg24_pair reg;
-			reg.set_value(UIY, IYH, IYL);
-			--reg;
-			reg.clear_upper();
-			reg.split_value(UIY, IYH, IYL);
+			set16_zero_IY(--get16_IY());
 		} break;
 		case MLT_BC: {
 			reg24_pair reg;
@@ -676,72 +577,72 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_PHL_A:
 		case LD_PIX_A:
 		case LD_PIY_A: {
-			
+			set_pointers_invalid();
 		} break;
 		
 		case LD_PHL_B:
 		case LD_PIX_B:
 		case LD_PIY_B: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_PHL_C:
 		case LD_PIX_C:
 		case LD_PIY_C: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_PHL_D:
 		case LD_PIX_D:
 		case LD_PIY_D: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_PHL_E:
 		case LD_PIX_E:
 		case LD_PIY_E: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_PHL_H:
 		case LD_PIX_H:
 		case LD_PIY_H: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_PHL_L:
 		case LD_PIX_L:
 		case LD_PIY_L: {
-			
+			set_pointers_invalid();
 		} break;
 
 		case LD_ADDR_HL:
 		case LD_PHL_HL:
 		case LD_PIX_HL:
 		case LD_PIY_HL: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_ADDR_DE:
 		case LD_PHL_DE:
 		case LD_PIX_DE:
 		case LD_PIY_DE: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_ADDR_BC:
 		case LD_PHL_BC:
 		case LD_PIX_BC:
 		case LD_PIY_BC: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_ADDR_IX:
 		case LD_PHL_IX:
 		case LD_PIX_IX:
 		case LD_PIY_IX: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_ADDR_IY:
 		case LD_PHL_IY:
 		case LD_PIX_IY:
 		case LD_PIY_IY: {
-			
+			set_pointers_invalid();
 		} break;
 		case LD_ADDR_SP: {
-			
+			set_pointers_invalid();
 		} break;
 
 		case LEA_BC_IX: { set_BC(reg24_lea(get_BC(), get_IX(), imm_offset)); } break;
@@ -1015,6 +916,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_DE(get_DE() + get_BC());
 			set_BC(0);
 			F.set_overflow(false);
+			set_pointers_invalid();
 		} break;
 
 		case LDDR:{
@@ -1022,6 +924,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_DE(get_DE() - get_BC());
 			set_BC(0);
 			F.set_overflow(false);
+			set_pointers_invalid();
 		} break;
 
 		case CPI: {
@@ -1042,13 +945,15 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_HL(++get_HL());
 			set_HL(++get_DE());
 			set_BC(--get_BC());
-			F.set_zero(get_BC().is_zero());
+			F.set_overflow(get_BC().is_nonzero());
+			set_pointers_invalid();
 		} break;
 		case LDD: {
 			set_HL(--get_HL());
 			set_HL(--get_DE());
 			set_BC(--get_BC());
-			F.set_zero(get_BC().is_zero());
+			F.set_overflow(get_BC().is_nonzero());
+			set_pointers_invalid();
 		} break;
 
 		case INC_A  : { reg8_inc(A  ); } break;
@@ -1081,6 +986,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case DEC_PIX:
 		case DEC_PIY:
 		/* only carry preserved */ {
+			set_pointers_invalid();
 			F.set_all_but_carry_unknown();
 		} break;
 
@@ -1224,9 +1130,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RL_E  : { reg_rl(E); } break;
 		case RL_H  : { reg_rl(H); } break;
 		case RL_L  : { reg_rl(L); } break;
-		case RL_PHL: { reg_rl(unknown8); } break;
-		case RL_PIX: { reg_rl(unknown8); } break;
-		case RL_PIY: { reg_rl(unknown8); } break;
+		case RL_PHL: { reg_rl(unknown8); set_pointers_invalid(); } break;
+		case RL_PIX: { reg_rl(unknown8); set_pointers_invalid(); } break;
+		case RL_PIY: { reg_rl(unknown8); set_pointers_invalid(); } break;
 
 		case RLC_A  : { reg_rlc(A); } break;
 		case RLC_B  : { reg_rlc(B); } break;
@@ -1235,9 +1141,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RLC_E  : { reg_rlc(E); } break;
 		case RLC_H  : { reg_rlc(H); } break;
 		case RLC_L  : { reg_rlc(L); } break;
-		case RLC_PHL: { reg_rlc(unknown8); } break;
-		case RLC_PIX: { reg_rlc(unknown8); } break;
-		case RLC_PIY: { reg_rlc(unknown8); } break;
+		case RLC_PHL: { reg_rlc(unknown8); set_pointers_invalid(); } break;
+		case RLC_PIX: { reg_rlc(unknown8); set_pointers_invalid(); } break;
+		case RLC_PIY: { reg_rlc(unknown8); set_pointers_invalid(); } break;
 
 		case RR_A  : { reg_rr(A); } break;
 		case RR_B  : { reg_rr(B); } break;
@@ -1246,9 +1152,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RR_E  : { reg_rr(E); } break;
 		case RR_H  : { reg_rr(H); } break;
 		case RR_L  : { reg_rr(L); } break;
-		case RR_PHL: { reg_rr(unknown8); } break;
-		case RR_PIX: { reg_rr(unknown8); } break;
-		case RR_PIY: { reg_rr(unknown8); } break;
+		case RR_PHL: { reg_rr(unknown8); set_pointers_invalid(); } break;
+		case RR_PIX: { reg_rr(unknown8); set_pointers_invalid(); } break;
+		case RR_PIY: { reg_rr(unknown8); set_pointers_invalid(); } break;
 
 		case RRC_A  : { reg_rrc(A); } break;
 		case RRC_B  : { reg_rrc(B); } break;
@@ -1257,9 +1163,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RRC_E  : { reg_rrc(E); } break;
 		case RRC_H  : { reg_rrc(H); } break;
 		case RRC_L  : { reg_rrc(L); } break;
-		case RRC_PHL: { reg_rrc(unknown8); } break;
-		case RRC_PIX: { reg_rrc(unknown8); } break;
-		case RRC_PIY: { reg_rrc(unknown8); } break;
+		case RRC_PHL: { reg_rrc(unknown8); set_pointers_invalid(); } break;
+		case RRC_PIX: { reg_rrc(unknown8); set_pointers_invalid(); } break;
+		case RRC_PIY: { reg_rrc(unknown8); set_pointers_invalid(); } break;
 
 		case SRL_A  : { reg_srl(A); } break;
 		case SRL_B  : { reg_srl(B); } break;
@@ -1268,9 +1174,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case SRL_E  : { reg_srl(E); } break;
 		case SRL_H  : { reg_srl(H); } break;
 		case SRL_L  : { reg_srl(L); } break;
-		case SRL_PHL: { reg_srl(unknown8); } break;
-		case SRL_PIX: { reg_srl(unknown8); } break;
-		case SRL_PIY: { reg_srl(unknown8); } break;
+		case SRL_PHL: { reg_srl(unknown8); set_pointers_invalid(); } break;
+		case SRL_PIX: { reg_srl(unknown8); set_pointers_invalid(); } break;
+		case SRL_PIY: { reg_srl(unknown8); set_pointers_invalid(); } break;
 
 		case SLA_A  : { reg_sla(A); } break;
 		case SLA_B  : { reg_sla(B); } break;
@@ -1279,9 +1185,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case SLA_E  : { reg_sla(E); } break;
 		case SLA_H  : { reg_sla(H); } break;
 		case SLA_L  : { reg_sla(L); } break;
-		case SLA_PHL: { reg_sla(unknown8); } break;
-		case SLA_PIX: { reg_sla(unknown8); } break;
-		case SLA_PIY: { reg_sla(unknown8); } break;
+		case SLA_PHL: { reg_sla(unknown8); set_pointers_invalid(); } break;
+		case SLA_PIX: { reg_sla(unknown8); set_pointers_invalid(); } break;
+		case SLA_PIY: { reg_sla(unknown8); set_pointers_invalid(); } break;
 
 		case SRA_A  : { reg_sra(A); } break;
 		case SRA_B  : { reg_sra(B); } break;
@@ -1290,14 +1196,20 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case SRA_E  : { reg_sra(E); } break;
 		case SRA_H  : { reg_sra(H); } break;
 		case SRA_L  : { reg_sra(L); } break;
-		case SRA_PHL: { reg_sra(unknown8); } break;
-		case SRA_PIX: { reg_sra(unknown8); } break;
-		case SRA_PIY: { reg_sra(unknown8); } break;
+		case SRA_PHL: { reg_sra(unknown8); set_pointers_invalid(); } break;
+		case SRA_PIX: { reg_sra(unknown8); set_pointers_invalid(); } break;
+		case SRA_PIY: { reg_sra(unknown8); set_pointers_invalid(); } break;
 
 		/* BCD */
 
 		case RLD:
 		case RRD:
+		{
+			F.set_flags_unknown();
+			A.set_unknown();
+			set_pointers_invalid();
+		} break;
+
 		case DAA: {
 			F.set_flags_unknown();
 			A.set_unknown();
@@ -1305,16 +1217,14 @@ void current_state::next_instruction(ez80_instruction instruction) {
 
 		/* push to stack */
 
-		case PEA_IX:
-		case PEA_IY:
-		case PUSH_AF:
-		case PUSH_BC:
-		case PUSH_DE:
-		case PUSH_HL:
-		case PUSH_IX:
-		case PUSH_IY: {
-			
-		} break;
+		case PEA_IX: { pea_stack(get_IX(), imm_offset); } break;
+		case PEA_IY: { pea_stack(get_IY(), imm_offset); } break;
+		case PUSH_AF: { push_stack(get_AF()); } break;
+		case PUSH_BC: { push_stack(get_BC()); } break;
+		case PUSH_DE: { push_stack(get_DE()); } break;
+		case PUSH_HL: { push_stack(get_HL()); } break;
+		case PUSH_IX: { push_stack(get_IX()); } break;
+		case PUSH_IY: { push_stack(get_IY()); } break;
 
 		/* call */
 		case CALL_C:
@@ -1326,7 +1236,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case CALL_PO:
 		case CALL_PE:
 		case CALL: {
-
+			{ set_pointers_invalid(); } break;
 		} break;
 
 		/* jump uncondintional */
@@ -1465,7 +1375,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RES_7_PIX:
 		case RES_7_PIY:
 		/* No state or flag change */
-		break;
+		{ set_pointers_invalid(); } break;
 
 		case NOP:
 		case LD_A_A:

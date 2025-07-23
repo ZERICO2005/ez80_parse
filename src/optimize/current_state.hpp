@@ -28,6 +28,63 @@ inline bool isknown_false(flag_state f) {
 	return (f == known_false);
 }
 
+inline flag_state and_flag_state(flag_state x, flag_state y) {
+	using enum flag_state;
+	if (x == known_false || y == known_false) {
+		return known_false;
+	}
+	if (x == known_true && y == known_true) {
+		return known_true;
+	}
+	return unknown;
+}
+
+inline flag_state and_flag_state(flag_state x, flag_state y, flag_state z) {
+	return and_flag_state(and_flag_state(x, y), z);
+}
+
+inline flag_state or_flag_state(flag_state x, flag_state y) {
+	using enum flag_state;
+	if (x == known_true || y == known_true) {
+		return known_true;
+	}
+	if (x == known_false && y == known_false) {
+		return known_false;
+	}
+	return unknown;
+}
+
+inline flag_state or_flag_state(flag_state x, flag_state y, flag_state z) {
+	return or_flag_state(or_flag_state(x, y), z);
+}
+
+inline flag_state xor_flag_state(flag_state x, flag_state y) {
+	using enum flag_state;
+	if (x == unknown || y == unknown) {
+		return unknown;
+	}
+	if (x == y) {
+		return known_true;
+	}
+	return known_false;
+}
+
+inline flag_state xor_flag_state(flag_state x, flag_state y, flag_state z) {
+	return xor_flag_state(xor_flag_state(x, y), z);
+}
+
+inline flag_state cpl_flag_state(flag_state x) {
+	using enum flag_state;
+	if (x == known_true) {
+		return known_false;
+	}
+	if (x == known_false) {
+		return known_true;
+	}
+	return unknown;
+}
+
+
 template<typename T>
 struct reg_pair {
 	T bits;
@@ -314,26 +371,71 @@ reg_pair<T> operator^(reg_pair<T> x, reg_pair<T> y) {
 template<typename T>
 reg_pair<T> operator++(reg_pair<T> x) {
 	if (x.isknown_fully()) {
-		x.bits++;
+		++x.bits;
 		return x;
 	}
-	int known_bits = countr_one(x.mask);
-	x.mask = (static_cast<T>(1) << known_bits) - 1;
-	x.bits++;
-	x.bits &= x.mask;
+	using enum flag_state;
+	flag_state carry = known_true;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state bit = x.bit_test(i);
+		// AND = carry, XOR = add
+		carry = and_flag_state(bit, carry);
+		x.bit_copy(i, xor_flag_state(bit, carry));
+	}
 	return x;
 }
 
 template<typename T>
 reg_pair<T> operator--(reg_pair<T> x) {
 	if (x.isknown_fully()) {
-		x.bits--;
+		--x.bits;
 		return x;
 	}
-	int known_bits = countr_one(x.mask);
-	x.mask = (static_cast<T>(1) << known_bits) - 1;
-	x.bits--;
-	x.bits &= x.mask;
+	using enum flag_state;
+	flag_state borrow = known_true;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state bit = x.bit_test(i);
+		// (~borrow & bit) = borrow, (borrow ^ bit) = sub
+		x.bit_copy(i, xor_flag_state(bit, borrow));
+		borrow = and_flag_state(cpl_flag_state(bit), borrow);
+	}
+	return x;
+}
+
+template<typename T>
+reg_pair<T> add_with_carry(reg_pair<T> x, reg_pair<T> y, flag_state& carry) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		// 1 bit full adder
+		flag_state X = x.bit_test(i);
+		flag_state Y = y.bit_test(i);
+		// SUM = X ^ Y ^ CIN
+		// COUT = (X & Y) | (CIN & (X ^ Y))
+		x.bit_copy(i, xor_flag_state(X, Y, carry));
+		carry = or_flag_state(
+			and_flag_state(X, Y),
+			and_flag_state(carry, xor_flag_state(X, Y))
+		);
+	}
+	return x;
+}
+
+template<typename T>
+reg_pair<T> subtract_with_borrow(reg_pair<T> x, reg_pair<T> y, flag_state& borrow) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		// 1 bit full subtractor
+		flag_state X = x.bit_test(i);
+		flag_state Y = y.bit_test(i);
+		// DIFF = X ^ Y ^ BIN
+		// BOUT = X < (Y + B)
+		// BOUT = (~X & Y) | (BIN & ~(X ^ Y))
+		x.bit_copy(i, xor_flag_state(X, Y, borrow));
+		borrow = or_flag_state(
+			and_flag_state(cpl_flag_state(X), Y),
+			and_flag_state(borrow, cpl_flag_state(xor_flag_state(X, Y)))
+		);
+	}
 	return x;
 }
 
@@ -352,32 +454,32 @@ reg_pair<T> operator-(reg_pair<T> x) {
 
 template<typename T>
 reg_pair<T> operator+(reg_pair<T> x, reg_pair<T> y) {
-	reg_pair<T> result;
-	if (x.isknown_fully() && y.isknown_fully()) {
-		result.set_known_fully();
-		result.bits = x.bits + y.bits;
-		return result;
-	}
-	int known_bits = min(countr_one(x.mask), countr_one(y.mask));
-	result.mask = (static_cast<T>(1) << known_bits) - 1;
-	result.bits = x.bits + y.bits;
-	result.bits &= result.mask;
-	return result;
+	#if 0
+		if (x.isknown_fully() && y.isknown_fully()) {
+			reg_pair<T> result;
+			result.set_known_fully();
+			result.bits = x.bits + y.bits;
+			return result;
+		}
+	#endif
+	using enum flag_state;
+	flag_state carry = known_false;
+	return add_with_carry(x, y, carry);
 }
 
 template<typename T>
 reg_pair<T> operator-(reg_pair<T> x, reg_pair<T> y) {
-	reg_pair<T> result;
-	if (x.isknown_fully() && y.isknown_fully()) {
-		result.mask = get_all_ones<T>();
-		result.bits = x.bits - y.bits;
-		return result;
-	}
-	int known_bits = min(countr_one(x.mask), countr_one(y.mask));
-	result.mask = (static_cast<T>(1) << known_bits) - 1;
-	result.bits = x.bits - y.bits;
-	result.bits &= result.mask;
-	return result;
+	#if 0
+		if (x.isknown_fully() && y.isknown_fully()) {
+			reg_pair<T> result;
+			result.mask = get_all_ones<T>();
+			result.bits = x.bits - y.bits;
+			return result;
+		}
+	#endif
+	using enum flag_state;
+	flag_state borrow = known_false;
+	return subtract_with_borrow(x, y, borrow);
 }
 
 template<typename T>
@@ -654,6 +756,16 @@ private:
 	}
 public:
 
+	void export_flag_pair(reg8_pair& dst) const {
+		dst.bits = bits.raw;
+		dst.mask = mask.raw;
+	}
+
+	void import_flag_pair(reg8_pair src) {
+		bits.raw = src.bits;
+		mask.raw = src.mask;
+	}
+
 	/* setters */
 
 	void set_carry(bool f) {
@@ -819,6 +931,15 @@ class current_state {
 	reg8_pair IYH;
 	reg8_pair UIY;
 
+	static constexpr size_t stack_size = 4;
+	reg24_pair STACK[stack_size];
+
+	void set_pointers_invalid() {
+		for (size_t i = 0; i < stack_size; i++) {
+			STACK[i].set_unknown();
+		}
+	}
+
 	void set_just_reg_unknown() {
 		A.set_unknown();
 		C.set_unknown();
@@ -838,25 +959,10 @@ class current_state {
 		UIY.set_unknown();
 	}
 
-	
 	void set_all_reg_unknown() {
+		set_pointers_invalid();
+		set_just_reg_unknown();
 		F.set_flags_unknown();
-		A.set_unknown();
-		C.set_unknown();
-		B.set_unknown();
-		UBC.set_unknown();
-		E.set_unknown();
-		D.set_unknown();
-		UDE.set_unknown();
-		L.set_unknown();
-		H.set_unknown();
-		UHL.set_unknown();
-		IXL.set_unknown();
-		IXH.set_unknown();
-		UIX.set_unknown();
-		IYL.set_unknown();
-		IYH.set_unknown();
-		UIY.set_unknown();
 	}
 
 	reg24_pair reg24_add(reg24_pair dst, reg24_pair src) {
@@ -1339,7 +1445,7 @@ class current_state {
 	reg24_pair reg_mlt(reg24_pair dst) {
 		reg16_pair x, y;
 		x.set_zero_extend(dst.get_hi());
-		y.set_zero_extend(dst.get_hi());
+		y.set_zero_extend(dst.get_lo());
 		x = x * y;
 		dst.set_zero_extend(x);
 		return dst;
@@ -1365,18 +1471,54 @@ class current_state {
 		F.set_overflow_unknown();
 	}
 	void reg8_inc(reg8_pair dst) {
+		F.set_overflow(dst.is_equal(0x7F));
 		++dst;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.bit_test(7));
-		F.set_overflow(dst.is_equal(0x80));
 	}
 	void reg8_dec(reg8_pair dst) {
+		F.set_overflow(dst.is_equal(0x80));
 		--dst;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.bit_test(7));
-		F.set_overflow(dst.is_equal(0x7F));
+	}
+	void push_stack(reg24_pair src) {
+		for (size_t i = 1; i < stack_size; i++) {
+			STACK[i] = STACK[i - 1];
+		}
+		STACK[0] = src;
+	}
+	reg24_pair pop_stack() {
+		reg24_pair ret = STACK[0];
+		for (size_t i = 1; i < stack_size; i++) {
+			STACK[i - 1] = STACK[i];
+		}
+		STACK[stack_size].set_unknown();
+		return ret;
+	}
+	void pea_stack(reg24_pair src, reg8_pair offset) {
+		reg24_pair dst;
+		reg24_pair extend;
+		extend.set_sign_extend(offset);
+		dst = (src + extend);
+		push_stack(dst);
+	}
+	reg24_pair ex_stack(reg24_pair arg) {
+		reg24_pair ret = STACK[0];
+		STACK[0] = arg;
+		return ret;
 	}
 /* getters */
+
+	reg24_pair get_AF() const {
+		reg8_pair upper;
+		reg8_pair flags;
+		reg24_pair ret;
+		upper.set_unknown();
+		F.export_flag_pair(flags);
+		ret.set_value(upper, A, flags);
+		return ret;
+	}
 	reg24_pair get_HL() const {
 		reg24_pair ret;
 		ret.set_value(UHL, H, L);
@@ -1410,7 +1552,7 @@ class current_state {
 	}
 
 /* CRT getters */
-
+	private:
 	reg16_pair get16_HL() const {
 		reg16_pair ret;
 		ret.set_value(H, L);
@@ -1443,6 +1585,7 @@ class current_state {
 		return ret;
 	}
 
+	public:
 	reg32_pair get32_EUHL() const {
 		reg32_pair ret;
 		ret.set_value(E, UHL, H, L);
@@ -1456,6 +1599,12 @@ class current_state {
 	}
 
 /* setters */
+
+	void set_AF(reg24_pair val) {
+		reg8_pair flags;
+		val.split_value(A, flags);
+		F.import_flag_pair(flags);
+	}
 
 	void set_HL(reg24_pair val) {
 		val.split_value(UHL, H, L);
@@ -1473,6 +1622,7 @@ class current_state {
 		val.split_value(UIY, IYH, IYL);
 	}
 	void set_SP(__attribute__((unused)) reg24_pair val) {
+		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
@@ -1503,13 +1653,14 @@ class current_state {
 		set_IY(dst);
 	}
 	void set_SP(uint24_t val) {
+		set_pointers_invalid();
 		reg24_pair dst;
 		dst.set_value(val);
 		set_SP(dst);
 	}
 
 /* CRT setters */
-
+	private:
 	void set16_zero_HL(reg16_pair val) {
 		val.split_value(UHL, H, L);
 	}
@@ -1526,6 +1677,7 @@ class current_state {
 		val.split_value(UIY, IYH, IYL);
 	}
 	void set16_zero_SP(__attribute__((unused)) reg16_pair val) {
+		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
@@ -1546,6 +1698,7 @@ class current_state {
 		val.split_value(UIY, IYH, IYL);
 	}
 	void set16_partial_SP(__attribute__((unused)) reg16_pair val) {
+		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
@@ -1566,9 +1719,11 @@ class current_state {
 		val.split_value(IYH, IYL);
 	}
 	void set16_preserve_SP(__attribute__((unused)) reg16_pair val) {
+		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
+	public:
 
 	void set32_EUHL(reg32_pair val) {
 		E.set_value(val.get_hi8());
@@ -1607,6 +1762,7 @@ class current_state {
 		IYL.set_unknown();
 	}
 	void SP_set_unknown() {
+		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
@@ -1626,17 +1782,37 @@ class current_state {
 		return "?";
 	}
 
+	
+
 	string print_reg8(reg8_pair dst) const {
-		if (dst.isknown_fully()) {
-			char buf[10];
-			snprintf(buf, sizeof(buf), "%02X", dst.bits);
-			return buf;
+		const char table[16] = {
+			'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
+		};
+		char buf[3] = "--"; 
+		uint8_t hi_mask = (dst.mask & 0xF0) >> 4;
+		uint8_t lo_mask = (dst.mask & 0x0F);
+		uint8_t hi_bits = (dst.bits & 0xF0) >> 4;
+		uint8_t lo_bits = (dst.bits & 0x0F);
+		if (hi_mask == 0xF) {
+			buf[0] = table[hi_bits];
+		} else if (hi_mask != 0x0) {
+			buf[0] = '*';
 		}
-		return "--";
+		if (lo_mask == 0xF) {
+			buf[1] = table[lo_bits];
+		} else if (lo_mask != 0x0) {
+			buf[1] = '*';
+		}
+		return string(buf);
 	}
 
 	string print_reg24(reg8_pair up, reg8_pair hi, reg8_pair lo) const {
 		return print_reg8(up) + print_reg8(hi) + print_reg8(lo);
+	}
+	string print_reg24(reg24_pair x) const {
+		reg8_pair up, hi, lo;
+		x.split_value(up, hi, lo);
+		return print_reg24(up, hi, lo);
 	}
 
 	string print_state() const {
@@ -1650,7 +1826,9 @@ class current_state {
 			" | DE " + print_reg24(UDE, D, E) +
 			" | BC " + print_reg24(UBC, B, C) + 
 			" | IX " + print_reg24(UIX, IXH, IXL) +
-			" | IY " + print_reg24(UIY, IYH, IYL)
+			" | IY " + print_reg24(UIY, IYH, IYL) +
+			" | S0 " + print_reg24(STACK[0]) +
+			" | S1 " + print_reg24(STACK[1])
 		);
 		return output;
 	}
