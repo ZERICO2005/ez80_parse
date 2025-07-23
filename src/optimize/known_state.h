@@ -10,24 +10,6 @@
 
 #include "../common_std.h"
 
-using std::countl_zero;
-using std::countl_one;
-using std::countr_zero;
-using std::countr_one;
-
-inline int countl_zero(uint24_t x) {
-	return countl_zero<uint32_t>(x);
-}
-inline int countl_one(uint24_t x) {
-	return countl_one<uint32_t>(x);
-}
-inline int countr_zero(uint24_t x) {
-	return countr_zero<uint32_t>(x);
-}
-inline int countr_one(uint24_t x) {
-	return countr_one<uint32_t>(x);
-}
-
 inline int safe_clz(unsigned int x) {
 	return __builtin_ffs(x) - 1;
 }
@@ -483,8 +465,8 @@ struct ez80_state {
 	uint24_t IY_bits;
 	uint8_t A_mask;
 	uint8_t A_bits;
-	ez80_flags known_flags;
-	ez80_flags flags;
+	ez80_flag known_flags;
+	ez80_flag flags;
 
 	private:
 	ez80_flag_state flag_getter(bool known, bool flag) {
@@ -590,7 +572,7 @@ struct ez80_state {
 	/* setters */
 
 	void set_carry(bool f) {
-		known_flags.carry = f;
+		known_flags.carry = 1;
 		flags.carry = f;
 	}
 	void set_zero(bool f) {

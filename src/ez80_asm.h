@@ -36,6 +36,7 @@ enum class ez80_calling_convention {
 
 enum class ez80_code_type {
 	code,
+	branch,	
 	known_func,
 	label,
 	directive,

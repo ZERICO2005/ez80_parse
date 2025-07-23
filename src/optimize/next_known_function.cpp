@@ -615,7 +615,7 @@ void ez80_known_state::next_known_function(ez80_known_function func) {
 		case __frameset0: {
 			state.state_unknown();
 		} break;
-		case __setflags: {
+		case __setflag: {
 		} break;
 	
 		/* <string.h> */

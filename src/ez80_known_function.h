@@ -171,7 +171,7 @@ enum class ez80_known_function {
 	/* CRT routines */
 	__frameset,
 	__frameset0,
-	__setflags,
+	__setflag,
 
 	/* <string.h> */
 	_memcpy,
@@ -415,7 +415,7 @@ char const * const ez80_known_function_name[] {
 	/* CRT routines */
 	"__frameset",
 	"__frameset0",
-	"__setflags",
+	"__setflag",
 
 	/* <string.h> */
 	"_memcpy",

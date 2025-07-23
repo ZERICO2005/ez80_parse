@@ -1190,6 +1190,7 @@ string code_section_to_string(const ez80_code_section& x) {
 	const list<ez80_code>& prog = x.prog;
 	for (ez80_code code : prog) {
 		switch (code.type) {
+			case ez80_code_type::branch:
 			case ez80_code_type::code: {
 				output += "\t" + instruction_to_string(code.instruction) + "\n";
 			} break;

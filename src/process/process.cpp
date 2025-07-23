@@ -18,6 +18,34 @@ bool setup_code(ez80_code& code, const asm_line& line) {
 		case instruction: {
 			code.type = ez80_code_type::code;
 			code.instruction = line.instruction;
+			switch (code.instruction.op_code) {
+				using enum ez80_op_code;
+				default: break;
+				case JR:
+				case JR_C:
+				case JR_NC:
+				case JR_Z:
+				case JR_NZ:
+				case JP:
+				case JP_C:
+				case JP_NC:
+				case JP_Z:
+				case JP_NZ:
+				case JP_P:
+				case JP_M:
+				case JP_PO:
+				case JP_PE:
+				case CALL:
+				case CALL_C:
+				case CALL_NC:
+				case CALL_Z:
+				case CALL_NZ:
+				case CALL_P:
+				case CALL_M:
+				case CALL_PO:
+				case CALL_PE:
+				code.type = ez80_code_type::branch;
+			}
 		} break;
 	}
 	return true;

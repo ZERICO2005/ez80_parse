@@ -5,23 +5,9 @@
 #include "ez80_instruction.h"
 #include "ez80_reg.h"
 
-union ez80_flags {
-	struct {
-		uint8_t carry : 1;
-		uint8_t addsub : 1;
-		uint8_t three : 1;
-		uint8_t half : 1;
-		uint8_t five : 1;
-		uint8_t overflow : 1;
-		uint8_t zero : 1;
-		uint8_t sign : 1;
-	};
-	uint8_t raw;
-};
-
 struct ez80_changed_reg {
 	ez80_op_code op_code;
-	ez80_flags flags;
+	ez80_flag flags;
 	union {
 		struct {
 			uint32_t A   : 1;
@@ -45,6 +31,8 @@ struct ez80_changed_reg {
 		uint32_t raw;
 	};
 };
+
+#if 0
 
 const ez80_changed_reg changed_reg[] = {
 	/*                           |  C  N:3:H:5  V:Z:S    A| U:B:C| U:D:E| U:H:L| U:I:X| U:I:Y| SP | */
@@ -1144,7 +1132,6 @@ const ez80_changed_reg changed_reg[] = {
 
 };
 
-
-
+#endif
 
 #endif /* EZ80_INSTRUCTION_INFO_H */
