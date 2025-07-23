@@ -4,6 +4,7 @@
 #include "../text_util.h"
 
 bool setup_code(ez80_code& code, const asm_line& line) {
+	code.original_line = line.line_number;
 	switch (line.line_type) {
 		using enum asm_line_type;
 		default: return false;

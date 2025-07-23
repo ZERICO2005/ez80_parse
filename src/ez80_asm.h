@@ -60,6 +60,7 @@ struct ez80_label {
 };
 
 struct ez80_code {
+	size_t original_line; /* 0 if the line was auto generated */
 	ez80_code_type type;
 	ez80_instruction instruction;
 	ez80_known_function known_func;

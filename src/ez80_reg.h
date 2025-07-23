@@ -100,5 +100,29 @@ enum class ez80_reg_field_bit {
 	SP  = 16,
 };
 
+enum class ez80_reg_field_mask {
+	A   = (1 <<  0),
+	UBC = (1 <<  1),
+	B   = (1 <<  2),
+	C   = (1 <<  3),
+	UDE = (1 <<  4),
+	D   = (1 <<  5),
+	E   = (1 <<  6),
+	UHL = (1 <<  7),
+	H   = (1 <<  8),
+	L   = (1 <<  9),
+	UIX = (1 << 10),
+	IXH = (1 << 11),
+	IXL = (1 << 12),
+	UIY = (1 << 13),
+	IYH = (1 << 14),
+	IYL = (1 << 15),
+	SP  = (1 << 16),
+	BC  = (UBC | B | C),
+	DE  = (UDE | D | E),
+	HL  = (UHL | H | L),
+	IX  = (UIX | IXH | IXL),
+	IY  = (UIY | IYH | IYL),
+};
 
 #endif /* EZ80_REG */

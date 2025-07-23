@@ -28,5 +28,6 @@ target_compile_options(
 	-Wno-unused-parameter
 	-Wno-unused-variable
 	-Wno-missing-braces
+	-Wimplicit-fallthrough
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC)

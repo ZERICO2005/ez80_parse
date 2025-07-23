@@ -41,9 +41,12 @@ struct reg_pair {
 		mask = 0;
 		bits = 0;
 	}
+	void set_known_fully() {
+		mask = get_all_ones<T>();
+	}
 	void set_value(T x) {
 		bits = x;
-		mask = ~static_cast<T>(0);
+		mask = get_all_ones<T>();
 	}
 	void set_value(reg_pair<T> x) {
 		bits = x.bits;
@@ -75,7 +78,7 @@ struct reg_pair {
 			return;
 		}
 		if (f == known_true) {
-			set_value(~static_cast<T>(0));
+			set_value(get_all_ones<T>());
 			return;
 		}
 		set_unknown();
@@ -142,7 +145,8 @@ struct reg_pair {
 	/* tests */
 
 	bool isknown_fully() const {
-		return (~mask == 0);
+		T temp = ~mask;
+		return (temp == 0);
 	}
 	bool isknown_zero() const {
 		return (isknown_fully() && (bits == 0));
@@ -350,7 +354,7 @@ template<typename T>
 reg_pair<T> operator+(reg_pair<T> x, reg_pair<T> y) {
 	reg_pair<T> result;
 	if (x.isknown_fully() && y.isknown_fully()) {
-		result.mask = ~static_cast<T>(0);
+		result.set_known_fully();
 		result.bits = x.bits + y.bits;
 		return result;
 	}
@@ -365,7 +369,7 @@ template<typename T>
 reg_pair<T> operator-(reg_pair<T> x, reg_pair<T> y) {
 	reg_pair<T> result;
 	if (x.isknown_fully() && y.isknown_fully()) {
-		result.mask = ~static_cast<T>(0);
+		result.mask = get_all_ones<T>();
 		result.bits = x.bits - y.bits;
 		return result;
 	}
@@ -380,12 +384,12 @@ template<typename T>
 reg_pair<T> operator*(reg_pair<T> x, reg_pair<T> y) {
 	reg_pair<T> result;
 	if (x.isknown_fully() && y.isknown_fully()) {
-		result.mask = ~static_cast<T>(0);
+		result.mask = get_all_ones<T>();
 		result.bits = x.bits * y.bits;
 		return result;
 	}
 	if (x.isknown_zero() || y.isknown_zero()) {
-		result.mask = ~static_cast<T>(0);
+		result.mask = get_all_ones<T>();
 		result.bits = 0;
 		return result;
 	}
@@ -417,7 +421,7 @@ struct reg16_pair : public reg_pair<uint16_t> {
 	}
 	void set_value(uint16_t src) {
 		bits = src;
-		mask = ~static_cast<uint16_t>(0);
+		mask = get_all_ones<uint16_t>();
 	}
 	void set_value(reg8_pair hi, reg8_pair lo) {
 		bits = ((uint16_t)hi.bits << 8) | lo.bits;
@@ -488,7 +492,7 @@ struct reg24_pair : public reg_pair<uint24_t> {
 	}
 	void set_value(uint24_t src) {
 		bits = src;
-		mask = ~static_cast<uint24_t>(0);
+		mask = get_all_ones<uint24_t>();
 	}
 	void set_value(reg8_pair hi, reg8_pair lo) {
 		bits = ((uint24_t)hi.bits << 8) | lo.bits;
@@ -795,6 +799,8 @@ public:
 };
 
 class current_state {
+	public:
+
 	flag_pair F;
 	reg8_pair A;
 	reg8_pair C;
@@ -813,7 +819,28 @@ class current_state {
 	reg8_pair IYH;
 	reg8_pair UIY;
 
+	void set_just_reg_unknown() {
+		A.set_unknown();
+		C.set_unknown();
+		B.set_unknown();
+		UBC.set_unknown();
+		E.set_unknown();
+		D.set_unknown();
+		UDE.set_unknown();
+		L.set_unknown();
+		H.set_unknown();
+		UHL.set_unknown();
+		IXL.set_unknown();
+		IXH.set_unknown();
+		UIX.set_unknown();
+		IYL.set_unknown();
+		IYH.set_unknown();
+		UIY.set_unknown();
+	}
+
+	
 	void set_all_reg_unknown() {
+		F.set_flags_unknown();
 		A.set_unknown();
 		C.set_unknown();
 		B.set_unknown();
@@ -1585,7 +1612,48 @@ class current_state {
 	}
 
 	void next_instruction(ez80_instruction instruction);
+
 	void next_known_func(ez80_known_function func);
+
+	string print_flag(flag_state f, string when_known_true) const {
+		using enum flag_state;
+		if (f == known_true) {
+			return when_known_true;
+		}
+		if (f == known_false) {
+			return "-";
+		}
+		return "?";
+	}
+
+	string print_reg8(reg8_pair dst) const {
+		if (dst.isknown_fully()) {
+			char buf[10];
+			snprintf(buf, sizeof(buf), "%02X", dst.bits);
+			return buf;
+		}
+		return "--";
+	}
+
+	string print_reg24(reg8_pair up, reg8_pair hi, reg8_pair lo) const {
+		return print_reg8(up) + print_reg8(hi) + print_reg8(lo);
+	}
+
+	string print_state() const {
+		string output = (
+			print_flag(F.get_sign(), "S") + 
+			print_flag(F.get_zero(), "Z") +
+			print_flag(F.get_overflow(), "V") +
+			print_flag(F.get_carry(), "C") +
+			" | A " + print_reg8(A) +
+			" | HL " + print_reg24(UHL, H, L) + 
+			" | DE " + print_reg24(UDE, D, E) +
+			" | BC " + print_reg24(UBC, B, C) + 
+			" | IX " + print_reg24(UIX, IXH, IXL) +
+			" | IY " + print_reg24(UIY, IYH, IYL)
+		);
+		return output;
+	}
 };
 
 #endif /* CURRENT_STATE_HPP */

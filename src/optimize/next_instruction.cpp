@@ -553,7 +553,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_HL_N:
 		case LD_HL_N_SIS: {
 			state.set_reg24(HL, value);
-		}
+		} break;
 		case LD_HL_ADDR:
 		case LD_HL_PHL:
 		case LD_HL_PIX:
@@ -563,7 +563,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_DE_N:
 		case LD_DE_N_SIS: {
 			state.set_reg24(DE, value);
-		}
+		} break;
 		case LD_DE_ADDR:
 		case LD_DE_PHL:
 		case LD_DE_PIX:
@@ -573,7 +573,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_BC_N:
 		case LD_BC_N_SIS: {
 			state.set_reg24(BC, value);
-		}
+		} break;
 		case LD_BC_ADDR:
 		case LD_BC_PHL:
 		case LD_BC_PIX:
@@ -583,7 +583,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_SP_N:
 		case LD_SP_N_SIS: {
 			state.set_reg24(SP, value);
-		}
+		} break;
 		case LD_SP_HL:
 		case LD_SP_IX:
 		case LD_SP_IY:
@@ -593,7 +593,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_IX_N:
 		case LD_IX_N_SIS: {
 			state.set_reg24(IX, value);
-		}
+		} break;
 		case LD_IX_ADDR:
 		case LD_IX_PHL:
 		case LD_IX_PIX:
@@ -603,7 +603,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case LD_IY_N:
 		case LD_IY_N_SIS: {
 			state.set_reg24(IY, value);
-		}
+		} break;
 		case LD_IY_ADDR:
 		case LD_IY_PHL:
 		case LD_IY_PIX:
@@ -1103,22 +1103,22 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		} break;
 		case ADD_HL_HL: {
 			state.set_carry(state.get_reg24(HL).left_shift24(known_false));
-		}
+		} break;
 		case ADD_HL_HL_SIS: {
 			state.set_carry(state.get_reg24(HL).left_shift16(known_false));
-		}
+		} break;
 		case ADD_IX_IX: {
 			state.set_carry(state.get_reg24(IX).left_shift24(known_false));
-		}
+		} break;
 		case ADD_IX_IX_SIS: {
 			state.set_carry(state.get_reg24(IX).left_shift16(known_false));
-		}
+		} break;
 		case ADD_IY_IY: {
 			state.set_carry(state.get_reg24(IY).left_shift24(known_false));
-		}
+		} break;
 		case ADD_IY_IY_SIS: {
 			state.set_carry(state.get_reg24(IY).left_shift16(known_false));
-		}
+		} break;
 		case ADD_HL_BC:
 		case ADD_HL_DE:
 		case ADD_HL_SP:
@@ -1466,7 +1466,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		case DEC_PIY:
 		/* only carry preserved */ {
 			state.only_carry_preserved();
-		}
+		} break;
 
 		case AND_A_N:
 		case AND_A_B:
@@ -1513,7 +1513,7 @@ void ez80_known_state::next_instruction(ez80_op_code op_code, uint24_t value) {
 		/* carry is cleared */ {
 			state.get_reg8(A).set_unknown();
 			state.set_carry(false);
-		}
+		} break;
 		/* Otherwise */
 		default: {
 			state.state_unknown();

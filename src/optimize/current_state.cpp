@@ -744,27 +744,27 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			
 		} break;
 
-		case LEA_BC_IX: { set_BC(reg24_lea(get_BC(), get_IX(), imm_offset)); }
-		case LEA_BC_IY: { set_BC(reg24_lea(get_BC(), get_IY(), imm_offset)); }
-		case LEA_DE_IX: { set_DE(reg24_lea(get_DE(), get_IX(), imm_offset)); }
-		case LEA_DE_IY: { set_DE(reg24_lea(get_DE(), get_IY(), imm_offset)); }
-		case LEA_HL_IX: { set_HL(reg24_lea(get_HL(), get_IX(), imm_offset)); }
-		case LEA_HL_IY: { set_HL(reg24_lea(get_HL(), get_IY(), imm_offset)); }
-		case LEA_IX_IX: { set_IX(reg24_lea(get_IX(), get_IX(), imm_offset)); }
-		case LEA_IX_IY: { set_IX(reg24_lea(get_IX(), get_IY(), imm_offset)); }
-		case LEA_IY_IX: { set_IY(reg24_lea(get_IY(), get_IX(), imm_offset)); }
-		case LEA_IY_IY: { set_IY(reg24_lea(get_IY(), get_IY(), imm_offset)); }
+		case LEA_BC_IX: { set_BC(reg24_lea(get_BC(), get_IX(), imm_offset)); } break;
+		case LEA_BC_IY: { set_BC(reg24_lea(get_BC(), get_IY(), imm_offset)); } break;
+		case LEA_DE_IX: { set_DE(reg24_lea(get_DE(), get_IX(), imm_offset)); } break;
+		case LEA_DE_IY: { set_DE(reg24_lea(get_DE(), get_IY(), imm_offset)); } break;
+		case LEA_HL_IX: { set_HL(reg24_lea(get_HL(), get_IX(), imm_offset)); } break;
+		case LEA_HL_IY: { set_HL(reg24_lea(get_HL(), get_IY(), imm_offset)); } break;
+		case LEA_IX_IX: { set_IX(reg24_lea(get_IX(), get_IX(), imm_offset)); } break;
+		case LEA_IX_IY: { set_IX(reg24_lea(get_IX(), get_IY(), imm_offset)); } break;
+		case LEA_IY_IX: { set_IY(reg24_lea(get_IY(), get_IX(), imm_offset)); } break;
+		case LEA_IY_IY: { set_IY(reg24_lea(get_IY(), get_IY(), imm_offset)); } break;
 
-		case LEA_BC_IX_SIS: { set_BC(reg16_lea(get_BC(), get_IX(), imm_offset)); }
-		case LEA_BC_IY_SIS: { set_BC(reg16_lea(get_BC(), get_IY(), imm_offset)); }
-		case LEA_DE_IX_SIS: { set_DE(reg16_lea(get_DE(), get_IX(), imm_offset)); }
-		case LEA_DE_IY_SIS: { set_DE(reg16_lea(get_DE(), get_IY(), imm_offset)); }
-		case LEA_HL_IX_SIS: { set_HL(reg16_lea(get_HL(), get_IX(), imm_offset)); }
-		case LEA_HL_IY_SIS: { set_HL(reg16_lea(get_HL(), get_IY(), imm_offset)); }
-		case LEA_IX_IX_SIS: { set_IX(reg16_lea(get_IX(), get_IX(), imm_offset)); }
-		case LEA_IX_IY_SIS: { set_IX(reg16_lea(get_IX(), get_IY(), imm_offset)); }
-		case LEA_IY_IX_SIS: { set_IY(reg16_lea(get_IY(), get_IX(), imm_offset)); }
-		case LEA_IY_IY_SIS: { set_IY(reg16_lea(get_IY(), get_IY(), imm_offset)); }
+		case LEA_BC_IX_SIS: { set_BC(reg16_lea(get_BC(), get_IX(), imm_offset)); } break;
+		case LEA_BC_IY_SIS: { set_BC(reg16_lea(get_BC(), get_IY(), imm_offset)); } break;
+		case LEA_DE_IX_SIS: { set_DE(reg16_lea(get_DE(), get_IX(), imm_offset)); } break;
+		case LEA_DE_IY_SIS: { set_DE(reg16_lea(get_DE(), get_IY(), imm_offset)); } break;
+		case LEA_HL_IX_SIS: { set_HL(reg16_lea(get_HL(), get_IX(), imm_offset)); } break;
+		case LEA_HL_IY_SIS: { set_HL(reg16_lea(get_HL(), get_IY(), imm_offset)); } break;
+		case LEA_IX_IX_SIS: { set_IX(reg16_lea(get_IX(), get_IX(), imm_offset)); } break;
+		case LEA_IX_IY_SIS: { set_IX(reg16_lea(get_IX(), get_IY(), imm_offset)); } break;
+		case LEA_IY_IX_SIS: { set_IY(reg16_lea(get_IY(), get_IX(), imm_offset)); } break;
+		case LEA_IY_IY_SIS: { set_IY(reg16_lea(get_IY(), get_IY(), imm_offset)); } break;
 
 		case SET_0_A: { A.bit_set(0); } break;
 		case SET_0_B: { B.bit_set(0); } break;
