@@ -25,4 +25,9 @@ void print_program(const ez80_program& program);
 
 string code_section_to_string(const ez80_code_section& x);
 
+/**
+ * tests the arithmetic logic used for reg_pair
+ */
+bool test_reg_pair();
+
 #endif /* EZ80_PARSE */

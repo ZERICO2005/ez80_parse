@@ -380,6 +380,23 @@ void optimize_asm(ez80_code_section& program) {
 				);
 			} break;
 			case branch:
+			{
+				switch (current.instruction.op_code) {
+					using enum ez80_op_code;
+					case CALL:
+					case CALL_C:
+					case CALL_NC:
+					case CALL_Z:
+					case CALL_NZ:
+					case CALL_P:
+					case CALL_M:
+					case CALL_PO:
+					case CALL_PE:
+					{ state.set_just_cxx_reg_unknown(); } break;
+					default: break;
+				}
+			}
+			[[fallthrough]];
 			case code:
 			{
 				state.next_instruction(current.instruction);

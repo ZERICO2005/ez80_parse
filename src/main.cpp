@@ -36,9 +36,13 @@ void save_asm_file(const char* output_path, std::string& input) {
 }
 
 int main(void) {
+	if (test_reg_pair() == false) {
+		printf("Failed tests\n");
+	}
 	char const * const input_path = "../input/input_asm.src";
 	char const * const output_path = "../output/output_asm.src";
 	printf("asm parse\n");
+
 	string input_asm;
 	ez80_program program;
 	load_asm_file(input_asm, input_path);

@@ -95,8 +95,8 @@ T crt_mul(T dst, T src) {
 }
 
 template<typename T>
-T crt_divu(T dst, __attribute__((unused)) T src) {
-	dst.set_unknown();
+T crt_divu(T dst, T src) {
+	dst = div_unsigned(dst, src);
 	return dst;
 }
 
@@ -108,7 +108,7 @@ T crt_divs(T dst, __attribute__((unused)) T src) {
 
 template<typename T>
 T crt_remu(T dst, __attribute__((unused)) T src) {
-	dst.set_unknown();
+	dst = rem_unsigned(dst, src);
 	return dst;
 }
 

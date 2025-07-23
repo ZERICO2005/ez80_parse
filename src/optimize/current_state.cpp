@@ -43,15 +43,15 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_IX_IX: { set_IX(add24_hl_hl(get_IX())); } break;
 		case ADD_IY_IY: { set_IY(add24_hl_hl(get_IY())); } break;
 	
-		case ADD_HL_HL_SIS: { set_HL(add16_hl_hl(get_HL())); } break;
-		case ADD_IX_IX_SIS: { set_IX(add16_hl_hl(get_IX())); } break;
-		case ADD_IY_IY_SIS: { set_IY(add16_hl_hl(get_IY())); } break;
+		case ADD_HL_HL_SIS: { set16_zero_HL(add16_hl_hl(get16_HL())); } break;
+		case ADD_IX_IX_SIS: { set16_zero_IX(add16_hl_hl(get16_IX())); } break;
+		case ADD_IY_IY_SIS: { set16_zero_IY(add16_hl_hl(get16_IY())); } break;
 
 		case ADC_HL_HL: { set_HL(adc24_hl_hl(get_HL())); } break;
-		case ADC_HL_HL_SIS: { set_HL(adc16_hl_hl(get_HL())); } break;
+		case ADC_HL_HL_SIS: { set16_zero_HL(adc16_hl_hl(get16_HL())); } break;
 
 		case SBC_HL_HL: { set_HL(sbc24_hl_hl(get_HL())); } break;
-		case SBC_HL_HL_SIS: { set_HL(sbc16_hl_hl(get_HL())); } break;
+		case SBC_HL_HL_SIS: { set16_zero_HL(sbc16_hl_hl(get16_HL())); } break;
 
 		/* unique instructions */
 
@@ -112,76 +112,76 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_IY(ex_stack(get_IY()));
 		} break;
 		case INC_BC: {
-			set_BC(++get_BC());
+			set_BC(get_BC().increment());
 		} break;
 		case INC_DE: {
-			set_DE(++get_DE());
+			set_DE(get_DE().increment());
 		} break;
 		case INC_HL: {
-			set_HL(++get_HL());
+			set_HL(get_HL().increment());
 		} break;
 		case INC_SP: {
 			SP_set_unknown();
 		} break;
 		case INC_IX: {
-			set_IX(++get_IX());
+			set_IX(get_IX().increment());
 		} break;
 		case INC_IY: {
-			set_IY(++get_IY());
+			set_IY(get_IY().increment());
 		} break;
 		case INC_BC_SIS: {
-			set16_zero_BC(++get16_BC());
+			set16_zero_BC(get16_BC().increment());
 		} break;
 		case INC_DE_SIS: {
-			set16_zero_DE(++get16_DE());
+			set16_zero_DE(get16_DE().increment());
 		} break;
 		case INC_HL_SIS: {
-			set16_zero_HL(++get16_HL());
+			set16_zero_HL(get16_HL().increment());
 		} break;
 		case INC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case INC_IX_SIS: {
-			set16_zero_IX(++get16_IX());
+			set16_zero_IX(get16_IX().increment());
 		} break;
 		case INC_IY_SIS: {
-			set16_zero_IY(++get16_IY());
+			set16_zero_IY(get16_IY().increment());
 		} break;
 		case DEC_BC: {
-			set_BC(--get_BC());
+			set_BC(get_BC().decrement());
 		} break;
 		case DEC_DE: {
-			set_DE(--get_DE());
+			set_DE(get_DE().decrement());
 		} break;
 		case DEC_HL: {
-			set_HL(--get_HL());
+			set_HL(get_HL().decrement());
 		} break;
 		case DEC_SP: {
 			SP_set_unknown();
 		} break;
 		case DEC_IX: {
-			set_IX(--get_IX());
+			set_IX(get_IX().decrement());
 		} break;
 		case DEC_IY: {
-			set_IY(--get_IY());
+			set_IY(get_IY().decrement());
 		} break;
 		case DEC_BC_SIS: {
-			set16_zero_BC(--get16_BC());
+			set16_zero_BC(get16_BC().decrement());
 		} break;
 		case DEC_DE_SIS: {
-			set16_zero_DE(--get16_DE());
+			set16_zero_DE(get16_DE().decrement());
 		} break;
 		case DEC_HL_SIS: {
-			set16_zero_HL(--get16_HL());
+			set16_zero_HL(get16_HL().decrement());
 		} break;
 		case DEC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case DEC_IX_SIS: {
-			set16_zero_IX(--get16_IX());
+			set16_zero_IX(get16_IX().decrement());
 		} break;
 		case DEC_IY_SIS: {
-			set16_zero_IY(--get16_IY());
+			set16_zero_IY(get16_IY().decrement());
 		} break;
 		case MLT_BC: {
 			reg24_pair reg;
@@ -656,16 +656,16 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LEA_IY_IX: { set_IY(reg24_lea(get_IY(), get_IX(), imm_offset)); } break;
 		case LEA_IY_IY: { set_IY(reg24_lea(get_IY(), get_IY(), imm_offset)); } break;
 
-		case LEA_BC_IX_SIS: { set_BC(reg16_lea(get_BC(), get_IX(), imm_offset)); } break;
-		case LEA_BC_IY_SIS: { set_BC(reg16_lea(get_BC(), get_IY(), imm_offset)); } break;
-		case LEA_DE_IX_SIS: { set_DE(reg16_lea(get_DE(), get_IX(), imm_offset)); } break;
-		case LEA_DE_IY_SIS: { set_DE(reg16_lea(get_DE(), get_IY(), imm_offset)); } break;
-		case LEA_HL_IX_SIS: { set_HL(reg16_lea(get_HL(), get_IX(), imm_offset)); } break;
-		case LEA_HL_IY_SIS: { set_HL(reg16_lea(get_HL(), get_IY(), imm_offset)); } break;
-		case LEA_IX_IX_SIS: { set_IX(reg16_lea(get_IX(), get_IX(), imm_offset)); } break;
-		case LEA_IX_IY_SIS: { set_IX(reg16_lea(get_IX(), get_IY(), imm_offset)); } break;
-		case LEA_IY_IX_SIS: { set_IY(reg16_lea(get_IY(), get_IX(), imm_offset)); } break;
-		case LEA_IY_IY_SIS: { set_IY(reg16_lea(get_IY(), get_IY(), imm_offset)); } break;
+		case LEA_BC_IX_SIS: { set16_zero_BC(reg16_lea(get16_BC(), get16_IX(), imm_offset)); } break;
+		case LEA_BC_IY_SIS: { set16_zero_BC(reg16_lea(get16_BC(), get16_IY(), imm_offset)); } break;
+		case LEA_DE_IX_SIS: { set16_zero_DE(reg16_lea(get16_DE(), get16_IX(), imm_offset)); } break;
+		case LEA_DE_IY_SIS: { set16_zero_DE(reg16_lea(get16_DE(), get16_IY(), imm_offset)); } break;
+		case LEA_HL_IX_SIS: { set16_zero_HL(reg16_lea(get16_HL(), get16_IX(), imm_offset)); } break;
+		case LEA_HL_IY_SIS: { set16_zero_HL(reg16_lea(get16_HL(), get16_IY(), imm_offset)); } break;
+		case LEA_IX_IX_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IX(), imm_offset)); } break;
+		case LEA_IX_IY_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IY(), imm_offset)); } break;
+		case LEA_IY_IX_SIS: { set16_zero_IY(reg16_lea(get16_IY(), get16_IX(), imm_offset)); } break;
+		case LEA_IY_IY_SIS: { set16_zero_IY(reg16_lea(get16_IY(), get16_IY(), imm_offset)); } break;
 
 		case SET_0_A: { A.bit_set(0); } break;
 		case SET_0_B: { B.bit_set(0); } break;
@@ -791,31 +791,31 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_IY_DE: { set_IY(reg24_add(get_IY(), get_DE())); } break;
 		case ADD_IY_SP: { set_IY(reg24_add(get_IY(), get_SP())); } break;
 
-		case ADD_HL_BC_SIS: { set_HL(reg16_add(get_HL(), get_BC())); } break;
-		case ADD_HL_DE_SIS: { set_HL(reg16_add(get_HL(), get_DE())); } break;
-		case ADD_HL_SP_SIS: { set_HL(reg16_add(get_HL(), get_SP())); } break;
-		case ADD_IX_BC_SIS: { set_IX(reg16_add(get_IX(), get_BC())); } break;
-		case ADD_IX_DE_SIS: { set_IX(reg16_add(get_IX(), get_DE())); } break;
-		case ADD_IX_SP_SIS: { set_IX(reg16_add(get_IX(), get_SP())); } break;
-		case ADD_IY_BC_SIS: { set_IY(reg16_add(get_IY(), get_BC())); } break;
-		case ADD_IY_DE_SIS: { set_IY(reg16_add(get_IY(), get_DE())); } break;
-		case ADD_IY_SP_SIS: { set_IY(reg16_add(get_IY(), get_SP())); } break;
+		case ADD_HL_BC_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_BC())); } break;
+		case ADD_HL_DE_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_DE())); } break;
+		case ADD_HL_SP_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_SP())); } break;
+		case ADD_IX_BC_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_BC())); } break;
+		case ADD_IX_DE_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_DE())); } break;
+		case ADD_IX_SP_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_SP())); } break;
+		case ADD_IY_BC_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_BC())); } break;
+		case ADD_IY_DE_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_DE())); } break;
+		case ADD_IY_SP_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_SP())); } break;
 
 		case ADC_HL_BC: { set_HL(reg24_adc(get_HL(), get_BC())); } break;
 		case ADC_HL_DE: { set_HL(reg24_adc(get_HL(), get_DE())); } break;
 		case ADC_HL_SP: { set_HL(reg24_adc(get_HL(), get_SP())); } break;
 
-		case ADC_HL_BC_SIS: { set_HL(reg16_adc(get_HL(), get_BC())); } break;
-		case ADC_HL_DE_SIS: { set_HL(reg16_adc(get_HL(), get_DE())); } break;
-		case ADC_HL_SP_SIS: { set_HL(reg16_adc(get_HL(), get_SP())); } break;
+		case ADC_HL_BC_SIS: { set16_zero_HL(reg16_adc(get16_HL(), get16_BC())); } break;
+		case ADC_HL_DE_SIS: { set16_zero_HL(reg16_adc(get16_HL(), get16_DE())); } break;
+		case ADC_HL_SP_SIS: { set16_zero_HL(reg16_adc(get16_HL(), get16_SP())); } break;
 
 		case SBC_HL_BC: { set_HL(reg24_sbc(get_HL(), get_BC())); } break;
 		case SBC_HL_DE: { set_HL(reg24_sbc(get_HL(), get_DE())); } break;
 		case SBC_HL_SP: { set_HL(reg24_sbc(get_HL(), get_SP())); } break;
 
-		case SBC_HL_BC_SIS: { set_HL(reg16_sbc(get_HL(), get_BC())); } break;
-		case SBC_HL_DE_SIS: { set_HL(reg16_sbc(get_HL(), get_DE())); } break;
-		case SBC_HL_SP_SIS: { set_HL(reg16_sbc(get_HL(), get_SP())); } break;
+		case SBC_HL_BC_SIS: { set16_zero_HL(reg16_sbc(get16_HL(), get16_BC())); } break;
+		case SBC_HL_DE_SIS: { set16_zero_HL(reg16_sbc(get16_HL(), get16_DE())); } break;
+		case SBC_HL_SP_SIS: { set16_zero_HL(reg16_sbc(get16_HL(), get16_SP())); } break;
 
 		case BIT_0_A: { reg_bit_test(A, 0); } break;
 		case BIT_0_B: { reg_bit_test(B, 0); } break;
@@ -928,30 +928,30 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 
 		case CPI: {
-			set_HL(--get_HL());
-			set_BC(--get_BC());
+			set_HL(get_HL().decrement());
+			set_BC(get_BC().decrement());
 			F.set_zero_unknown();
 			F.set_sign_unknown();
 			F.set_overflow(get_BC().is_nonzero());
 		} break;
 		case CPD: {
-			set_HL(--get_HL());
-			set_BC(--get_BC());
+			set_HL(get_HL().decrement());
+			set_BC(get_BC().decrement());
 			F.set_zero_unknown();
 			F.set_sign_unknown();
 			F.set_overflow(get_BC().is_nonzero());
 		} break;
 		case LDI: {
-			set_HL(++get_HL());
-			set_HL(++get_DE());
-			set_BC(--get_BC());
+			set_HL(get_HL().increment());
+			set_HL(get_DE().increment());
+			set_BC(get_BC().decrement());
 			F.set_overflow(get_BC().is_nonzero());
 			set_pointers_invalid();
 		} break;
 		case LDD: {
-			set_HL(--get_HL());
-			set_HL(--get_DE());
-			set_BC(--get_BC());
+			set_HL(get_HL().decrement());
+			set_HL(get_DE().decrement());
+			set_BC(get_BC().decrement());
 			F.set_overflow(get_BC().is_nonzero());
 			set_pointers_invalid();
 		} break;
