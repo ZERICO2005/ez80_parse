@@ -418,6 +418,7 @@ class current_state {
 	public:
 
 	ez80_instruction previous_instruction;
+	ez80_known_function previous_known_func;
 
 	flag_pair F;
 	reg8_pair A;
@@ -721,7 +722,7 @@ class current_state {
 	void acc_tst_was_zero(reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
-		merge_tst_was_zero_bits(A, arg);
+		merge_assuming_bitwise_and_is_zero(A, arg);
 	}
 	reg24_pair adc24_was_zero(reg24_pair arg) {
 		set_HL(0);
@@ -800,7 +801,7 @@ class current_state {
 		F.set_sign(false);
 		F.set_overflow(false);
 		F.set_carry(false);
-		merge_cp_was_zero_bits(A, arg);
+		merge_assuming_bitwise_xor_is_zero(A, arg);
 	}
 	void sbc24_was_zero() {
 		set_HL(0);

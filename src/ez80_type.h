@@ -13,6 +13,7 @@ using std::countr_zero;
 using std::countr_one;
 using std::has_single_bit;
 using std::bit_floor;
+using std::popcount;
 
 #if 1
 
@@ -37,6 +38,10 @@ inline int countr_zero(uint24_t x) {
 }
 inline int countr_one(uint24_t x) {
 	return countr_one<uint32_t>(x);
+}
+
+inline int popcount(uint24_t x) {
+	return popcount(static_cast<uint32_t>(x));
 }
 
 inline bool has_single_bit(uint24_t x) {

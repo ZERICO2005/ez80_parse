@@ -129,25 +129,34 @@ T crt_rems(T dst, T src) {
 }
 
 template<typename T>
-void crt_ctlz(reg8_pair& dst, __attribute__((unused)) T src) {
-	dst.set_unknown();
+void crt_ctlz(reg8_pair& dst, T src) {
+	uint8_t min_bound, max_bound;
+	reg_pair_leading_zeros(min_bound,max_bound, src);
+	dst.set_to_unsigned_range(min_bound, max_bound);
+}
+
+template<typename T>
+void crt_cttz(reg8_pair& dst, T src) {
+	uint8_t min_bound, max_bound;
+	reg_pair_trailing_zeros(min_bound,max_bound, src);
+	dst.set_to_unsigned_range(min_bound, max_bound);
 }
 
 template<typename T>
 void crt_popcnt(reg8_pair& dst, __attribute__((unused)) T src) {
-	dst.set_unknown();
+	uint8_t min_bound, max_bound;
+	reg_pair_count_ones(min_bound,max_bound, src);
+	dst.set_to_unsigned_range(min_bound, max_bound);
 }
 
 template<typename T>
 T crt_bswap(T dst) {
-	dst.set_unknown();
-	return dst;
+	return swap_byte_order(dst);
 }
 
 template<typename T>
 T crt_bitrev(T dst) {
-	dst.set_unknown();
-	return dst;
+	return bit_reverse(dst);
 }
 
 void current_state::next_known_func(ez80_known_function func) {
@@ -182,14 +191,17 @@ void current_state::next_known_func(ez80_known_function func) {
 		case __brems: {
 			A.set_value(crt_rems(A, C));
 		} break;
-		case __bbitrev: {
-			A.set_value(crt_bitrev(A));
-		} break;
 		case __bctlz: {
+			crt_ctlz(A, A);
+		} break;
+		case __bcttz: {
 			crt_ctlz(A, A);
 		} break;
 		case __bpopcnt: {
 			crt_popcnt(A, A);
+		} break;
+		case __bbitrev: {
+			A.set_value(crt_bitrev(A));
 		} break;
 	
 		/* 16 bit */
@@ -238,6 +250,9 @@ void current_state::next_known_func(ez80_known_function func) {
 		} break;
 		case __sctlz: {
 			crt_ctlz(A, get16_HL());
+		} break;
+		case __scttz: {
+			crt_cttz(A, get16_HL());
 		} break;
 		case __spopcnt: {
 			crt_popcnt(A, get16_HL());
@@ -295,6 +310,9 @@ void current_state::next_known_func(ez80_known_function func) {
 		} break;
 		case __ictlz: {
 			crt_ctlz(A, get_HL());
+		} break;
+		case __icttz: {
+			crt_cttz(A, get_HL());
 		} break;
 		case __ipopcnt: {
 			crt_popcnt(A, get_HL());
@@ -363,6 +381,9 @@ void current_state::next_known_func(ez80_known_function func) {
 			set32_EUHL(crt_rems(get32_EUHL(), get32_AUBC()));
 		} break;
 		case __lctlz: {
+			crt_ctlz(A, get32_EUHL());
+		} break;
+		case __lcttz: {
 			crt_ctlz(A, get32_EUHL());
 		} break;
 		case __lpopcnt: {
@@ -447,6 +468,9 @@ void current_state::next_known_func(ez80_known_function func) {
 			DE_set_unknown();
 		} break;
 		case __i48ctlz: {
+			A.set_unknown();
+		} break;
+		case __i48cttz: {
 			A.set_unknown();
 		} break;
 		case __i48popcnt: {
@@ -548,6 +572,9 @@ void current_state::next_known_func(ez80_known_function func) {
 			HL_set_unknown();
 		} break;
 		case __llctlz: {
+			A.set_unknown();
+		} break;
+		case __llcttz: {
 			A.set_unknown();
 		} break;
 		case __llpopcnt: {

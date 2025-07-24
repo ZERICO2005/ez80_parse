@@ -7,6 +7,7 @@ enum class ez80_known_function {
 	/* 8 bit */
 	__bbitrev,
 	__bctlz,
+	__bcttz,
 	__bdivs,
 	__bdivu,
 	__bpopcnt,
@@ -22,6 +23,7 @@ enum class ez80_known_function {
 	__sbswap,
 	__scmpzero,
 	__sctlz,
+	__scttz,
 	__sdivs,
 	__sdivu,
 	__smulu,
@@ -42,6 +44,7 @@ enum class ez80_known_function {
 	__ibswap,
 	__icmpzero,
 	__ictlz,
+	__icttz,
 	__idivs,
 	__idivu,
 	__imulu,
@@ -65,6 +68,7 @@ enum class ez80_known_function {
 	__lcmpu,
 	__lcmpzero,
 	__lctlz,
+	__lcttz,
 	__ldivs,
 	__ldivu,
 	__lmulu,
@@ -89,6 +93,7 @@ enum class ez80_known_function {
 	__i48cmpu,
 	__i48cmpzero,
 	__i48ctlz,
+	__i48cttz,
 	__i48divs,
 	__i48divu,
 	__i48mulu,
@@ -113,6 +118,7 @@ enum class ez80_known_function {
 	__llcmpu,
 	__llcmpzero,
 	__llctlz,
+	__llcttz,
 	__lldivs,
 	__lldivu,
 	__llmulu,
@@ -251,6 +257,7 @@ char const * const ez80_known_function_name[] {
 	/* 8 bit */
 	"__bbitrev",
 	"__bctlz",
+	"__bcttz",
 	"__bdivs",
 	"__bdivu",
 	"__bpopcnt",
@@ -266,6 +273,7 @@ char const * const ez80_known_function_name[] {
 	"__sbswap",
 	"__scmpzero",
 	"__sctlz",
+	"__scttz",
 	"__sdivs",
 	"__sdivu",
 	"__smulu",
@@ -286,6 +294,7 @@ char const * const ez80_known_function_name[] {
 	"__ibswap",
 	"__icmpzero",
 	"__ictlz",
+	"__icttz",
 	"__idivs",
 	"__idivu",
 	"__imulu",
@@ -309,6 +318,7 @@ char const * const ez80_known_function_name[] {
 	"__lcmpu",
 	"__lcmpzero",
 	"__lctlz",
+	"__lcttz",
 	"__ldivs",
 	"__ldivu",
 	"__lmulu",
@@ -333,6 +343,7 @@ char const * const ez80_known_function_name[] {
 	"__i48cmpu",
 	"__i48cmpzero",
 	"__i48ctlz",
+	"__i48cttz",
 	"__i48divs",
 	"__i48divu",
 	"__i48mulu",
@@ -357,6 +368,7 @@ char const * const ez80_known_function_name[] {
 	"__llcmpu",
 	"__llcmpzero",
 	"__llctlz",
+	"__llcttz",
 	"__lldivs",
 	"__lldivu",
 	"__llmulu",
@@ -496,6 +508,7 @@ inline bool is_crt_function(ez80_known_function func) {
 	switch (func) {
 		case __bbitrev:
 		case __bctlz:
+		case __bcttz:
 		case __bdivs:
 		case __bdivu:
 		case __bpopcnt:
@@ -509,6 +522,7 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __sbswap:
 		case __scmpzero:
 		case __sctlz:
+		case __scttz:
 		case __sdivs:
 		case __sdivu:
 		case __smulu:
@@ -527,6 +541,7 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __ibswap:
 		case __icmpzero:
 		case __ictlz:
+		case __icttz:
 		case __idivs:
 		case __idivu:
 		case __imulu:
@@ -548,6 +563,7 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __lcmpu:
 		case __lcmpzero:
 		case __lctlz:
+		case __lcttz:
 		case __ldivs:
 		case __ldivu:
 		case __lmulu:
@@ -570,6 +586,7 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __i48cmpu:
 		case __i48cmpzero:
 		case __i48ctlz:
+		case __i48cttz:
 		case __i48divs:
 		case __i48divu:
 		case __i48mulu:
@@ -592,6 +609,7 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __llcmpu:
 		case __llcmpzero:
 		case __llctlz:
+		case __llcttz:
 		case __lldivs:
 		case __lldivu:
 		case __llmulu:
@@ -606,6 +624,45 @@ inline bool is_crt_function(ez80_known_function func) {
 		case __llshru:
 		case __llsub:
 		case __llxor:
+		case __fadd:
+		case __fcmp:
+		case __fcmpo:
+		case __fcmpu:
+		case __fdiv:
+		case __fmul:
+		case __fneg:
+		case __frem:
+		case __fsub:
+		case __ftod:
+		case __ftol:
+		case __ftoll:
+		case __ftoul:
+		case __ftoull:
+		case __lltof:
+		case __ltof:
+		case __ulltof:
+		case __ultof:
+		case __dadd:
+		case __dcmp:
+		case __dcmpo:
+		case __dcmpu:
+		case __ddiv:
+		case __dmul:
+		case __dneg:
+		case __drem:
+		case __dsub:
+		case __dtof:
+		case __dtol:
+		case __dtoll:
+		case __dtoul:
+		case __dtoull:
+		case __lltod:
+		case __ltod:
+		case __ulltod:
+		case __ultod:
+		case __frameset:
+		case __frameset0:
+		case __setflag:
 			return true;
 		default:
 			return false;

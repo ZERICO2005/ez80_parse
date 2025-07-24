@@ -267,6 +267,9 @@ public:
 			case known_false: bit_clear(b); return;
 		}
 	}
+	void bit_copy(int b, bool f) {
+		bit_copy(b, set_flag_state(f));
+	}
 
 	/* tests */
 
@@ -339,6 +342,17 @@ public:
 		return unknown;
 	}
 
+	T get_unknown_bits_as_zeros() const {
+		T ret = (bits & mask);
+		return ret;
+	}
+
+	T get_unknown_bits_as_ones() const {
+		T ret = (bits & mask);
+		ret |= (~mask);
+		return ret;
+	}
+
 	/* signbit */
 
 	constexpr int get_signbit_index() const {
@@ -347,6 +361,27 @@ public:
 
 	flag_state test_signbit() const {
 		return bit_test(get_signbit_index());
+	}
+
+	/* set to range */
+
+	void set_to_unsigned_range(T min_bound, T max_bound) {
+		if (min_bound == max_bound) {
+			set_value(min_bound);
+			return;
+		}
+		if (min_bound > max_bound) {
+			std::swap(min_bound, max_bound);
+		}
+		set_unknown();
+		for (size_t i = bit_width_of_type<T>(); i --> 0;) {
+			bool x = (min_bound & (static_cast<T>(1) << i));
+			bool y = (max_bound & (static_cast<T>(1) << i));
+			if (x != y) {
+				break;
+			}
+			bit_copy(i, x);
+		}
 	}
 
 //------------------------------------------------------------------------------
@@ -817,16 +852,15 @@ flag_state unsigned_less_equal(reg_pair<T> x, reg_pair<T> y) {
 
 template<typename T>
 flag_state compare_equal(reg_pair<T> x, reg_pair<T> y) {
-	#if 0
-		using enum flag_state;
-		if (x.isknown_fully() && y.isknown_fully()) {
-			return ((x.bits == y.bits) ? known_true : known_false);
-		}
-	#else
-		flag_state carry, zero;
-		unsigned_compare(carry, zero, x, y);
-		return zero;
-	#endif
+	using enum flag_state;
+	if (x.isknown_fully() && y.isknown_fully()) {
+		return ((x.bits == y.bits) ? known_true : known_false);
+	}
+	// are any bits known to be different
+	if (((x.bits ^ y.bits) & (x.mask & y.mask)) != 0) {
+		return known_false;
+	}
+	return unknown;
 }
 
 template<typename T>
@@ -860,8 +894,8 @@ void divrem_unsigned(
 		quo.set_unknown();
 		return;
 	}
-	quo.set_to_zero();;
-	rem.set_to_zero();;
+	quo.set_to_zero();
+	rem.set_to_zero();
 	for (size_t i = bit_width_of_type<T>(); i --> 0;) {
 		rem.shift_left_logical(1);
 		rem.bit_copy(0, num.bit_test(i));
@@ -872,10 +906,7 @@ void divrem_unsigned(
 		quo.bit_copy(i, rem_ge_den);
 	}
 	if (den.isknown_fully()) {
-		// the remainder will be less than the quotient
-		T rem_mask = ~((bit_floor(static_cast<T>(den.bits - 1)) << 1) - 1);
-		rem.bits &= ~rem_mask;
-		rem.mask |= rem_mask;
+		rem.set_to_unsigned_range(0, den.bits - 1);
 	}
 }
 
@@ -947,37 +978,142 @@ reg_pair<T>& operator--(reg_pair<T>& x) {
 	return x;
 }
 
-template<typename T>
-void merge_tst_was_zero_bits(reg_pair<T>& x, reg_pair<T>& y) {
+//------------------------------------------------------------------------------
+// Logical merge known bits
+//------------------------------------------------------------------------------
+
+/**
+ * @brief Uses the result from a logical AND to resolve unknown bits.
+ */
+inline void merge_known_bits_via_and(flag_state result, flag_state& x, flag_state& y) {
 	using enum flag_state;
-	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
-		// ((X & Y) == 0) so one of them must be zero
-		if (x.isknown_bit_set(i) && !y.isknown_bit(i)) {
-			y.bit_clear(i);
-			continue;
+	if (result != known_false) {
+		return;
+	}
+	// ((X & Y) == 0) so at least one of them is zero
+	if (isknown_true(x) && !isknown(y)) {
+		y = known_false;
+		return;
+	}
+	if (isknown_true(y) && !isknown(x)) {
+		x = known_false;
+	}
+}
+
+/**
+ * @brief Uses the result from a logical OR to resolve unknown bits.
+ */
+inline void merge_known_bits_via_or(flag_state result, flag_state& x, flag_state& y) {
+	using enum flag_state;
+	if (result != known_true) {
+		return;
+	}
+	// ((X | Y) == 1) so at least one of them is zero
+	if (isknown_true(x) && !isknown(y)) {
+		y = known_false;
+		return;
+	}
+	if (isknown_true(y) && !isknown(x)) {
+		x = known_false;
+	}
+}
+
+/**
+ * @brief Uses the result from a logical XOR to resolve unknown bits.
+ */
+inline void merge_known_bits_via_xor(flag_state result, flag_state& x, flag_state& y) {
+	using enum flag_state;
+	if (result == known_false) {
+		// ((X ^ Y) == 0) so both bits are the same
+		if (isknown(x) && !isknown(y)) {
+			y = x;
+			return;
 		}
-		if (y.isknown_bit_set(i) && !x.isknown_bit(i)) {
-			x.bit_clear(i);
-			continue;
+		if (isknown(y) && !isknown(x)) {
+			x = y;
+			return;
+		}
+	}
+	if (result == known_true) {
+		// ((X ^ Y) == 1) so both bits are different
+		if (isknown(x) && !isknown(y)) {
+			y = cpl_flag_state(x);
+			return;
+		}
+		if (isknown(y) && !isknown(x)) {
+			x = cpl_flag_state(y);
+			return;
 		}
 	}
 }
 
 template<typename T>
-void merge_cp_was_zero_bits(reg_pair<T>& x, reg_pair<T>& y) {
-	using enum flag_state;
+void merge_known_bits_via_and(reg_pair<T> result, reg_pair<T>& x, reg_pair<T>& y) {
 	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
-		// ((X ^ Y) == 0) so both bits are the same
-		if (x.isknown_bit(i) && !y.isknown_bit(i)) {
-			y.bit_copy(i, x.bit_test(i));
-			continue;
-		}
-		if (y.isknown_bit(i) && !x.isknown_bit(i)) {
-			x.bit_copy(i, y.bit_test(i));
-			continue;
-		}
+		flag_state R = result.bit_test(i);
+		flag_state X = x.bit_test(i);
+		flag_state Y = y.bit_test(i);
+		merge_known_bits_via_and(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
 	}
 }
+
+template<typename T>
+void merge_known_bits_via_or(reg_pair<T> result, reg_pair<T>& x, reg_pair<T>& y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state R = result.bit_test(i);
+		flag_state X = x.bit_test(i);
+		flag_state Y = y.bit_test(i);
+		merge_known_bits_via_or(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
+	}
+}
+
+template<typename T>
+void merge_known_bits_via_xor(reg_pair<T> result, reg_pair<T>& x, reg_pair<T>& y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state R = result.bit_test(i);
+		flag_state X = x.bit_test(i);
+		flag_state Y = y.bit_test(i);
+		merge_known_bits_via_xor(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
+	}
+}
+
+template<typename T>
+void merge_assuming_bitwise_and_is_zero(reg_pair<T>& x, reg_pair<T>& y) {
+	reg_pair<T> result;
+	result.set_to_zero();
+	merge_known_bits_via_and(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_or_is_all_ones(reg_pair<T>& x, reg_pair<T>& y) {
+	reg_pair<T> result;
+	result.set_to_all_ones();
+	merge_known_bits_via_or(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_xor_is_zero(reg_pair<T>& x, reg_pair<T>& y) {
+	reg_pair<T> result;
+	result.set_to_zero();
+	merge_known_bits_via_xor(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_xor_is_all_ones(reg_pair<T>& x, reg_pair<T>& y) {
+	reg_pair<T> result;
+	result.set_to_all_ones();
+	merge_known_bits_via_xor(result, x, y);
+}
+
+//------------------------------------------------------------------------------
+// Swap Byte Order
+//------------------------------------------------------------------------------
 
 template<typename T>
 reg_pair<T> swap_byte_order(reg_pair<T> x);
@@ -1028,6 +1164,85 @@ inline reg_pair<uint64_t> swap_byte_order(reg_pair<uint64_t> x) {
 	x.bits = __builtin_bswap64(x.bits);
 	x.mask = __builtin_bswap64(x.mask);
 	return x;
+}
+
+//------------------------------------------------------------------------------
+// Reverse Bits
+//------------------------------------------------------------------------------
+
+template<typename T>
+reg_pair<T> bit_reverse(reg_pair<T> x);
+
+template<>
+inline reg_pair<uint8_t> bit_reverse(reg_pair<uint8_t> x) {
+	x.bits = __builtin_bitreverse8(x.bits);
+	x.mask = __builtin_bitreverse8(x.mask);
+	return x;
+}
+
+template<>
+inline reg_pair<uint16_t> bit_reverse(reg_pair<uint16_t> x) {
+	x.bits = __builtin_bitreverse16(x.bits);
+	x.mask = __builtin_bitreverse16(x.mask);
+	return x;
+}
+
+template<>
+inline reg_pair<uint24_t> bit_reverse(reg_pair<uint24_t> x) {
+	uint32_t temp_bits = static_cast<uint32_t>(x.bits);
+	uint32_t temp_mask = static_cast<uint32_t>(x.mask);
+	temp_bits = __builtin_bitreverse32(temp_bits) >> 8;
+	temp_mask = __builtin_bitreverse32(temp_mask) >> 8;
+	x.bits = static_cast<uint24_t>(temp_bits);
+	x.mask = static_cast<uint24_t>(temp_mask);
+	return x;
+}
+
+template<>
+inline reg_pair<uint32_t> bit_reverse(reg_pair<uint32_t> x) {
+	x.bits = __builtin_bitreverse32(x.bits);
+	x.mask = __builtin_bitreverse32(x.mask);
+	return x;
+}
+
+template<>
+inline reg_pair<uint48_t> bit_reverse(reg_pair<uint48_t> x) {
+	uint64_t temp_bits = static_cast<uint64_t>(x.bits);
+	uint64_t temp_mask = static_cast<uint64_t>(x.mask);
+	temp_bits = __builtin_bitreverse64(temp_bits) >> 16;
+	temp_mask = __builtin_bitreverse64(temp_mask) >> 16;
+	x.bits = static_cast<uint48_t>(temp_bits);
+	x.mask = static_cast<uint48_t>(temp_mask);
+	return x;
+}
+
+template<>
+inline reg_pair<uint64_t> bit_reverse(reg_pair<uint64_t> x) {
+	x.bits = __builtin_bitreverse64(x.bits);
+	x.mask = __builtin_bitreverse64(x.mask);
+	return x;
+}
+
+//------------------------------------------------------------------------------
+// Bit Tests (mimics the functions from C23 <stdbit.h>)
+//------------------------------------------------------------------------------
+
+template<typename T>
+void reg_pair_count_ones(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
+	min_bound = popcount(x.get_unknown_bits_as_zeros());
+	max_bound = popcount(x.get_unknown_bits_as_ones());
+}
+
+template<typename T>
+void reg_pair_leading_zeros(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
+	min_bound = countl_zero(x.get_unknown_bits_as_zeros());
+	max_bound = countl_zero(x.get_unknown_bits_as_ones());
+}
+
+template<typename T>
+void reg_pair_trailing_zeros(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
+	min_bound = countr_zero(x.get_unknown_bits_as_zeros());
+	max_bound = countr_zero(x.get_unknown_bits_as_ones());
 }
 
 #endif /* REG_PAIR_HPP */
