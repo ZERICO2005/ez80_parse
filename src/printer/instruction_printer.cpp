@@ -49,7 +49,7 @@ inline string imm8_value_str(const ez80_instruction& x) {
 		return symbol_str(x.symbol);
 	}
 	char buf[20];
-	snprintf(buf, sizeof(buf), "$%02x", (uint32_t)x.value);
+	snprintf(buf, sizeof(buf), "$%02x", (uint32_t)(x.value & 0xFF));
 	return buf;
 }
 
@@ -58,7 +58,7 @@ inline string imm16_value_str(const ez80_instruction& x) {
 		return symbol_str(x.symbol);
 	}
 	char buf[20];
-	snprintf(buf, sizeof(buf), "$%04x", (uint32_t)x.value);
+	snprintf(buf, sizeof(buf), "$%04x", (uint32_t)(x.value & 0xFFFF));
 	return buf;
 }
 
@@ -67,7 +67,7 @@ inline string imm24_value_str(const ez80_instruction& x) {
 		return symbol_str(x.symbol);
 	}
 	char buf[20];
-	snprintf(buf, sizeof(buf), "$%06x", (uint32_t)x.value);
+	snprintf(buf, sizeof(buf), "$%06x", (uint32_t)(x.value & 0xFFFFFF));
 	return buf;
 }
 

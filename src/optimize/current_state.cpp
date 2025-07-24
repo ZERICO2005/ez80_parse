@@ -184,22 +184,13 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set16_zero_IY(get16_IY().decrement());
 		} break;
 		case MLT_BC: {
-			reg24_pair reg;
-			reg.set_value(UBC, B, C);
-			reg_mlt(reg);
-			reg.split_value(UBC, B, C);
+			set16_zero_BC(reg_mlt(B, C));
 		} break;
 		case MLT_DE: {
-			reg24_pair reg;
-			reg.set_value(UDE, D, E);
-			reg_mlt(reg);
-			reg.split_value(UDE, D, E);
+			set16_zero_DE(reg_mlt(D, E));
 		} break;
 		case MLT_HL: {
-			reg24_pair reg;
-			reg.set_value(UHL, H, L);
-			reg_mlt(reg);
-			reg.split_value(UHL, H, L);
+			set16_zero_HL(reg_mlt(H, L));
 		} break;
 		case MLT_SP: {
 			SP_set_unknown();
