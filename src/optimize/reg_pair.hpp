@@ -385,6 +385,95 @@ public:
 	}
 
 //------------------------------------------------------------------------------
+// Merge bits
+//------------------------------------------------------------------------------
+
+/** 
+ * @brief assumes that no known bits conflict
+ */
+void merge_bits(reg_pair<T> y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state X = this->bit_test(i);
+		flag_state Y = y.bit_test(i);
+		if (!isknown(Y)) {
+			continue;
+		}
+		if (isknown(X)) {
+			if (X != Y) {
+				printf("Error: merge_bits conflict at bit %zu\n", i);
+				bit_unknown(i);
+				continue;
+			}
+			continue;
+		}
+		this->bit_copy(i, Y);
+	}
+}
+
+/** 
+ * @brief sets bits to unknown on conflict
+ */
+void merge_bits_favor_unknown(reg_pair<T> y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state X = this->bit_test(i);
+		flag_state Y = y.bit_test(i);
+		if (!isknown(Y)) {
+			continue;
+		}
+		if (isknown(X)) {
+			if (X != Y) {
+				bit_unknown(i);
+				continue;
+			}
+			continue;
+		}
+		this->bit_copy(i, Y);
+	}
+}
+
+/** 
+ * @brief preserves bits on conflict
+ */
+void merge_bits_preserve(reg_pair<T> y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state X = this->bit_test(i);
+		flag_state Y = y.bit_test(i);
+		if (!isknown(Y)) {
+			continue;
+		}
+		if (isknown(X)) {
+			continue;
+		}
+		this->bit_copy(i, Y);
+	}
+}
+
+/** 
+ * @brief overwrites bits on conflict
+ */
+void merge_bits_overwrite(reg_pair<T> y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state X = this->bit_test(i);
+		flag_state Y = y.bit_test(i);
+		if (!isknown(Y)) {
+			continue;
+		}
+		if (isknown(X)) {
+			if (X != Y) {
+				this->bit_copy(i, Y);
+				continue;
+			}
+			continue;
+		}
+		this->bit_copy(i, Y);
+	}
+}
+
+//------------------------------------------------------------------------------
 // Undefined Behaviour
 //------------------------------------------------------------------------------
 
@@ -906,7 +995,9 @@ void divrem_unsigned(
 		quo.bit_copy(i, rem_ge_den);
 	}
 	if (den.isknown_fully()) {
-		rem.set_to_unsigned_range(0, den.bits - 1);
+		reg_pair<T> rem_mask;
+		rem_mask.set_to_unsigned_range(0, den.bits - 1);
+		rem.merge_bits(rem_mask);
 	}
 }
 

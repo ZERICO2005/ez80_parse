@@ -121,7 +121,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_HL(get_HL().increment());
 		} break;
 		case INC_SP: {
-			SP_set_unknown();
+			increment_stack();
 		} break;
 		case INC_IX: {
 			set_IX(get_IX().increment());
@@ -157,7 +157,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_HL(get_HL().decrement());
 		} break;
 		case DEC_SP: {
-			SP_set_unknown();
+			decrement_stack();
 		} break;
 		case DEC_IX: {
 			set_IX(get_IX().decrement());

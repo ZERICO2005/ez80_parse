@@ -438,8 +438,9 @@ class current_state {
 	reg8_pair IYH;
 	reg8_pair UIY;
 
-	static constexpr size_t stack_size = 4;
-	reg24_pair STACK[stack_size];
+	static constexpr size_t stack_size = 12;
+	static_assert(stack_size >= 6, "invalid stack size");
+	reg8_pair STACK[stack_size];
 
 	void set_pointers_invalid() {
 		for (size_t i = 0; i < stack_size; i++) {
@@ -494,6 +495,57 @@ class current_state {
 		set_just_reg_unknown();
 		F.set_flags_unknown();
 	}
+
+/* stack operations */
+
+	void push_stack(reg24_pair src) {
+		for (size_t i = stack_size; i --> 3;) {
+			STACK[i] = STACK[i - 3];
+		}
+		STACK[0] = src.get_lo();
+		STACK[1] = src.get_hi();
+		STACK[2] = src.get_upper();
+	}
+	void decrement_stack() {
+		for (size_t i = stack_size; i --> 1;) {
+			STACK[i] = STACK[i - 1];
+		}
+		STACK[0].set_unknown();
+	}
+	reg24_pair pop_stack() {
+		reg24_pair ret;
+		ret.set_value(STACK[2], STACK[1], STACK[0]);
+		for (size_t i = 3; i < stack_size; i++) {
+			STACK[i - 3] = STACK[i];
+		}
+		STACK[stack_size - 3].set_unknown();
+		STACK[stack_size - 2].set_unknown();
+		STACK[stack_size - 1].set_unknown();
+		return ret;
+	}
+	void increment_stack() {
+		for (size_t i = 1; i < stack_size; i++) {
+			STACK[i - 1] = STACK[i];
+		}
+		STACK[stack_size - 1].set_unknown();
+	}
+	void pea_stack(reg24_pair src, reg8_pair offset) {
+		reg24_pair dst;
+		reg24_pair extend;
+		extend.set_sign_extend(offset);
+		dst = (src + extend);
+		push_stack(dst);
+	}
+	reg24_pair ex_stack(reg24_pair arg) {
+		reg24_pair ret;
+		ret.set_value(STACK[2], STACK[1], STACK[0]);
+		STACK[0] = arg.get_lo();
+		STACK[1] = arg.get_hi();
+		STACK[2] = arg.get_upper();
+		return ret;
+	}
+
+/* instructions */
 
 	void set_addition_overflow_flags(
 		flag_state result, flag_state x, flag_state y
@@ -1166,32 +1218,6 @@ class current_state {
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 	}
-	void push_stack(reg24_pair src) {
-		for (size_t i = 1; i < stack_size; i++) {
-			STACK[i] = STACK[i - 1];
-		}
-		STACK[0] = src;
-	}
-	reg24_pair pop_stack() {
-		reg24_pair ret = STACK[0];
-		for (size_t i = 1; i < stack_size; i++) {
-			STACK[i - 1] = STACK[i];
-		}
-		STACK[stack_size].set_unknown();
-		return ret;
-	}
-	void pea_stack(reg24_pair src, reg8_pair offset) {
-		reg24_pair dst;
-		reg24_pair extend;
-		extend.set_sign_extend(offset);
-		dst = (src + extend);
-		push_stack(dst);
-	}
-	reg24_pair ex_stack(reg24_pair arg) {
-		reg24_pair ret = STACK[0];
-		STACK[0] = arg;
-		return ret;
-	}
 /* getters */
 
 	reg24_pair get_AF() const {
@@ -1506,8 +1532,14 @@ class current_state {
 
 	string print_state() const {
 		string output = (
-			"S1 " + print_reg24(STACK[1]) +
-			" | S0 " + print_reg24(STACK[0]) +
+		#if 0
+			"S9 " + print_reg24(STACK[11], STACK[10], STACK[9]) +
+			" | S6 " + print_reg24(STACK[8], STACK[7], STACK[6]) +
+			" | S3 " + print_reg24(STACK[5], STACK[4], STACK[3]) +
+		#else
+			"S3 " + print_reg24(STACK[5], STACK[4], STACK[3]) +
+		#endif
+			" | S0 " + print_reg24(STACK[2], STACK[1], STACK[0]) +
 			" | IX " + print_reg24(UIX, IXH, IXL) +
 			" | IY " + print_reg24(UIY, IYH, IYL) +
 			" | A " + print_reg8(A) +
