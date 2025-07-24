@@ -573,6 +573,12 @@ void divrem_unsigned(
 		rem = subtract_ignore_carry(rem, (cmp_mask & den));
 		quo.bit_copy(i, rem_ge_den);
 	}
+	if (den.isknown_fully()) {
+		// the remainder will be less than the quotient
+		T rem_mask = ~((bit_floor(static_cast<T>(den.bits - 1)) << 1) - 1);
+		rem.bits &= ~rem_mask;
+		rem.mask |= rem_mask;
+	}
 }
 
 template<typename T>
@@ -1051,6 +1057,8 @@ public:
 class current_state {
 	public:
 
+	ez80_instruction previous_instruction;
+
 	flag_pair F;
 	reg8_pair A;
 	reg8_pair C;
@@ -1076,6 +1084,11 @@ class current_state {
 		for (size_t i = 0; i < stack_size; i++) {
 			STACK[i].set_unknown();
 		}
+	}
+
+	void set_previous_instructions_invalid() {
+		using enum ez80_op_code;
+		previous_instruction.op_code = UNKNOWN;
 	}
 
 	void set_just_cxx_reg_unknown() {
@@ -1317,6 +1330,117 @@ class current_state {
 		F.set_sign(dst.test_signbit());
 		F.set_overflow(dst.is_parity_even());
 	}
+	void acc_or_was_zero(reg8_pair& arg) {
+		F.set_sign(false);
+		F.set_overflow(true);
+		A.set_value(0);
+		arg.set_value(0);
+	}
+	void acc_xor_was_zero(reg8_pair& arg) {
+		F.set_sign(false);
+		F.set_overflow(true);
+		A.set_value(0);
+	}
+	void acc_and_was_zero(reg8_pair& arg) {
+		F.set_sign(false);
+		F.set_overflow(true);
+		A.set_value(0);
+	}
+	void acc_tst_was_zero(reg8_pair& arg) {
+		F.set_sign(false);
+		F.set_overflow(true);
+	}
+	reg24_pair adc24_was_zero(reg24_pair arg) {
+		set_HL(0);
+		F.set_sign(false);
+		if (F.isknown_carry_clear()) {
+			// carry is only cleared when doing 0 += 0
+			arg.set_value(0);
+			F.set_overflow(false);
+			return arg;
+		}
+		if (arg.isknown_nonzero()) {
+			// carry is always set when arg is non-zero
+			F.set_carry(true);
+		}
+		return arg;
+	}
+	reg24_pair adc16_was_zero(reg24_pair arg) {
+		set_HL(0);
+		F.set_sign(false);
+		if (F.isknown_carry_clear()) {
+			// carry is only cleared when doing 0 += 0
+			arg.bits &= 0xFF0000;
+			arg.mask |= 0x00FFFF;
+			F.set_overflow(false);
+			return arg;
+		}
+		if (arg.isknown_nonzero()) {
+			// carry is always set when arg is non-zero
+			F.set_carry(true);
+		}
+		return arg;
+	}
+	void acc_add_was_zero(reg8_pair& arg) {
+		A.set_value(0);
+		F.set_sign(false);
+		if (F.isknown_carry_clear() || arg.isknown_zero()) {
+			// carry is only cleared when doing 0 += 0
+			arg.set_value(0);
+			F.set_overflow(false);
+			F.set_carry(false);
+			return;
+		}
+		if (arg.isknown_nonzero()) {
+			// carry is always set when arg is non-zero
+			F.set_carry(true);
+		}
+	}
+	void acc_adc_was_zero(reg8_pair& arg) {
+		A.set_value(0);
+		F.set_sign(false);
+		if (F.isknown_carry_clear()) {
+			// carry is only cleared when doing 0 += 0
+			arg.set_value(0);
+			F.set_overflow(false);
+			return;
+		}
+		if (arg.isknown_nonzero()) {
+			// carry is always set when arg is non-zero
+			F.set_carry(true);
+		}
+		return;
+	}
+	void acc_sbc_was_zero(reg8_pair arg) {
+		A.set_value(0);
+		F.set_sign(false);
+		F.set_overflow(false);
+		F.set_carry(false);
+	}
+	void acc_sub_was_zero(reg8_pair arg) {
+		A.set_value(0);
+		F.set_sign(false);
+		F.set_overflow(false);
+		F.set_carry(false);
+	}
+	void acc_cp_was_zero(reg8_pair& arg) {
+		F.set_sign(false);
+		F.set_overflow(false);
+		F.set_carry(false);
+	}
+	void sbc24_was_zero() {
+		set_HL(0);
+		F.set_sign(false);
+		F.set_overflow(false);
+		F.set_carry(false);
+	}
+	void sbc16_was_zero() {
+		set_HL(0);
+		F.set_sign(false);
+		F.set_overflow(false);
+		F.set_carry(false);
+	}
+
 	void acc_cpl() {
 		A.complement();
 	}
@@ -1325,6 +1449,7 @@ class current_state {
 		A = -A;
 		F.set_zero(A.is_zero());
 		F.set_sign(A.test_signbit());
+		F.set_overflow(A.is_equal(0x80));
 		if (A.isknown_zero()) {
 			A.set_unknown();
 		}
@@ -1358,6 +1483,16 @@ class current_state {
 		A.mask >>= 1;
 		A.bit_copy(7, new_carry);
 		F.set_carry(new_carry);
+	}
+	void reg8_shift_set_flags(reg8_pair src) {
+		F.set_zero(src.is_zero());
+		F.set_sign(src.test_signbit());
+		F.set_overflow(src.is_parity_even());
+	}
+	void reg8_shift_to_zero(reg8_pair& arg) {
+		arg.set_value(0);
+		F.set_sign(false);
+		F.set_overflow(true);
 	}
 	void reg_rl(reg8_pair dst) {
 		flag_state new_carry = dst.test_signbit();
@@ -1623,6 +1758,26 @@ class current_state {
 		F.set_zero(src.bit_test(b));
 		F.set_sign_unknown();
 		F.set_overflow_unknown();
+	}
+	void reg8_inc_dec_to_zero(reg8_pair& arg) {
+		arg.set_value(0);
+		F.set_sign(false);
+		F.set_overflow(false);
+	}
+	void reg8_bitwise_flag_set(reg8_pair arg) {
+		F.set_overflow(arg.is_parity_even());
+		F.set_zero(arg.is_zero());
+		F.set_sign(arg.test_signbit());
+	}
+	void reg8_inc_flag_set(reg8_pair arg) {
+		F.set_overflow(arg.is_equal(0x80));
+		F.set_zero(arg.is_zero());
+		F.set_sign(arg.test_signbit());
+	}
+	void reg8_dec_flag_set(reg8_pair arg) {
+		F.set_overflow(arg.is_equal(0x7F));
+		F.set_zero(arg.is_zero());
+		F.set_sign(arg.test_signbit());
 	}
 	void reg8_inc(reg8_pair dst) {
 		F.set_overflow(dst.is_equal(0x7F));
@@ -1929,6 +2084,8 @@ class current_state {
 	void next_instruction(ez80_instruction instruction);
 
 	void next_known_func(ez80_known_function func);
+
+	void check_previous_instruction(ez80_instruction current_instruction);
 
 	string print_flag(flag_state f, string when_known_true) const {
 		using enum flag_state;

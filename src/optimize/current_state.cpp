@@ -863,7 +863,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case BIT_7_D: { reg_bit_test(D, 7); } break;
 		case BIT_7_E: { reg_bit_test(E, 7); } break;
 		case BIT_7_H: { reg_bit_test(H, 7); } break;
-		case BIT_7_L: { reg_bit_test(L, 7); } break;			
+		case BIT_7_L: { reg_bit_test(L, 7); } break;
 
 		case BIT_0_PHL:
 		case BIT_0_PIX:
@@ -1471,4 +1471,5 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_all_reg_unknown();
 		} break;
 	}
+	check_previous_instruction(instruction);
 }

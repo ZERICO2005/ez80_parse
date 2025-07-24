@@ -12,6 +12,7 @@ using std::countl_one;
 using std::countr_zero;
 using std::countr_one;
 using std::has_single_bit;
+using std::bit_floor;
 
 #if 1
 
@@ -40,6 +41,10 @@ inline int countr_one(uint24_t x) {
 
 inline bool has_single_bit(uint24_t x) {
 	return (x && !(x & (x - 1)));
+}
+
+inline uint24_t bit_floor(uint24_t x) {
+	return static_cast<uint24_t>(bit_floor(static_cast<uint32_t>(x)));
 }
 
 template<typename T>

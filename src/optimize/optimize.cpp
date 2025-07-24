@@ -335,6 +335,8 @@ void optimize_asm(ez80_code_section& program) {
 		using enum ez80_code_type;
 		using enum ez80_op_code;
 		ez80_code current = *it;
+
+		// /* debug */ if (current.original_line < 0) { ++it; continue; }
 		switch (current.type) {
 			case known_func: {
 				using enum ez80_known_function;
@@ -410,9 +412,9 @@ void optimize_asm(ez80_code_section& program) {
 			case label:
 			{
 				state.set_all_reg_unknown();
-				// printf("%6zu: label:\n", current.original_line);
+				printf("%6zu: label:\n", current.original_line);
 			} break;
-			default:
+			default: break;
 		}
 		++it;
 	}
