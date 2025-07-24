@@ -159,7 +159,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 
 				/* constant */
 
-				case CP_A_N : { A.set_value(imm8); } break;
+				case CP_A_N : { acc_cp_was_zero(imm8); } break;
 				case TST_A_N: { acc_tst_was_zero(imm8); } break;
 
 				/* general cases */

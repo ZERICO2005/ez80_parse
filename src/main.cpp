@@ -55,8 +55,8 @@ int main(void) {
 	process_asm(code_section, program);
 	optimize_asm(code_section);
 
-	string output_asm = code_section_to_string(code_section);
-	save_asm_file(output_path, output_asm);
+	// string output_asm = code_section_to_string(code_section);
+	// save_asm_file(output_path, output_asm);
 
 	printf("finished\n");
 	return 0;

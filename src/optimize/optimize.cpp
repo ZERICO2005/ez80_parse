@@ -331,12 +331,12 @@ void optimize_iand(
 void optimize_asm(ez80_code_section& program) {
 	list<ez80_code>& prog = program.prog;
 	current_state state;
+	state.set_all_reg_unknown();
 	for (list<ez80_code>::iterator it = prog.begin(); it != prog.end();) {
 		using enum ez80_code_type;
 		using enum ez80_op_code;
 		ez80_code current = *it;
 
-		// /* debug */ if (current.original_line < 0) { ++it; continue; }
 		switch (current.type) {
 			case known_func: {
 				using enum ez80_known_function;

@@ -117,10 +117,10 @@ inline flag_state cpl_flag_state(flag_state x) {
 inline const char* to_str_flag_state(flag_state x) {
 	using enum flag_state;
 	if (x == known_true) {
-		return "false";
+		return "true";
 	}
 	if (x == known_false) {
-		return "true";
+		return "false";
 	}
 	return "unknown";
 }
@@ -498,7 +498,8 @@ reg_pair<T> add_with_carry(reg_pair<T> x, reg_pair<T> y, flag_state& carry) {
 
 template<typename T>
 reg_pair<T> add_ignore_carry(reg_pair<T> x, reg_pair<T> y) {
-	flag_state carry = flag_state::known_false;
+	using enum flag_state;
+	flag_state carry = known_false;
 	return add_with_carry(x, y, carry);
 }
 
@@ -523,15 +524,64 @@ reg_pair<T> subtract_with_carry(reg_pair<T> x, reg_pair<T> y, flag_state& carry)
 
 template<typename T>
 reg_pair<T> subtract_ignore_carry(reg_pair<T> x, reg_pair<T> y) {
-	flag_state carry = flag_state::known_false;
+	using enum flag_state;
+	flag_state carry = known_false;
 	return subtract_with_carry(x, y, carry);
 }
 
 template<typename T>
-flag_state compare_using_carry_from_subtraction(reg_pair<T> x, reg_pair<T> y) {
-	flag_state carry = flag_state::known_false;
-	subtract_with_carry(x, y, carry);
-	return carry;
+void unsigned_compare(flag_state& carry, flag_state& zero, reg_pair<T> x, reg_pair<T> y) {
+	using enum flag_state;
+	carry = known_false;
+	zero = subtract_with_carry(x, y, carry).is_zero();
+}
+
+template<typename T>
+flag_state unsigned_less_than(reg_pair<T> x, reg_pair<T> y) {
+	using enum flag_state;
+	flag_state carry, zero;
+	unsigned_compare(carry, zero, x, y);
+	if (carry == known_true) {
+		return known_true;
+	}
+	if ((carry == known_false) || (zero == known_true)) {
+		return known_false;
+	}
+	return unknown;
+}
+
+template<typename T>
+flag_state unsigned_greater_equal(reg_pair<T> x, reg_pair<T> y) {
+	return cpl_flag_state(unsigned_less_than(x, y));
+}
+
+template<typename T>
+flag_state unsigned_greater_than(reg_pair<T> x, reg_pair<T> y) {
+	return unsigned_less_than(y, x);
+}
+
+template<typename T>
+flag_state unsigned_less_equal(reg_pair<T> x, reg_pair<T> y) {
+	return cpl_flag_state(unsigned_less_than(y, x));
+}
+
+template<typename T>
+flag_state compare_equal(reg_pair<T> x, reg_pair<T> y) {
+	#if 0
+		using enum flag_state;
+		if (x.isknown_fully() && y.isknown_fully()) {
+			return ((x.bits == y.bits) ? known_true : known_false);
+		}
+	#else
+		flag_state carry, zero;
+		unsigned_compare(carry, zero, x, y);
+		return zero;
+	#endif
+}
+
+template<typename T>
+flag_state compare_notequal(reg_pair<T> x, reg_pair<T> y) {
+	return cpl_flag_state(compare_equal(x, y));
 }
 
 template<typename T>
@@ -565,9 +615,7 @@ void divrem_unsigned(
 	for (size_t i = bit_width_of_type<T>(); i --> 0;) {
 		rem.shift_left_logical(1);
 		rem.bit_copy(0, num.bit_test(i));
-		flag_state carry = compare_using_carry_from_subtraction(rem, den);
-		// NC = rem >= dem
-		flag_state rem_ge_den = cpl_flag_state(carry);
+		flag_state rem_ge_den = unsigned_greater_equal(rem, den);
 		reg_pair<T> cmp_mask;
 		cmp_mask.set_to_zero_or_cpl(rem_ge_den);
 		rem = subtract_ignore_carry(rem, (cmp_mask & den));
@@ -647,6 +695,38 @@ template<typename T>
 reg_pair<T>& operator--(reg_pair<T>& x) {
 	x.decrement();
 	return x;
+}
+
+template<typename T>
+void merge_tst_was_zero_bits(reg_pair<T>& x, reg_pair<T>& y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		// ((X & Y) == 0) so one of them must be zero
+		if (x.isknown_bit_set(i) && !y.isknown_bit(i)) {
+			y.bit_clear(i);
+			continue;
+		}
+		if (y.isknown_bit_set(i) && !x.isknown_bit(i)) {
+			x.bit_clear(i);
+			continue;
+		}
+	}
+}
+
+template<typename T>
+void merge_cp_was_zero_bits(reg_pair<T>& x, reg_pair<T>& y) {
+	using enum flag_state;
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		// ((X ^ Y) == 0) so both bits are the same
+		if (x.isknown_bit(i) && !y.isknown_bit(i)) {
+			y.bit_copy(i, x.bit_test(i));
+			continue;
+		}
+		if (y.isknown_bit(i) && !x.isknown_bit(i)) {
+			x.bit_copy(i, y.bit_test(i));
+			continue;
+		}
+	}
 }
 
 typedef reg_pair<uint8_t> reg8_pair;
@@ -894,7 +974,7 @@ private:
 			bits.raw &= ~flag_bit;
 			return;
 		}
-		bits.raw |= flag_bit;
+		mask.raw |= flag_bit;
 		if (f == known_true) {
 			bits.raw |= flag_bit;
 			return;
@@ -1209,6 +1289,12 @@ class current_state {
 	}
 	reg24_pair reg24_sbc(reg24_pair dst, reg24_pair src) {
 		using enum flag_state;
+		if (src.isknown_zero() && F.isknown_carry_clear()) {
+			F.set_zero(dst.is_zero());
+			F.set_sign(dst.test_signbit());
+			F.set_overflow(false);
+			return dst;
+		}
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
 		flag_state carry = F.get_carry();
@@ -1222,6 +1308,12 @@ class current_state {
 	}
 	reg16_pair reg16_sbc(reg16_pair dst, reg16_pair src) {
 		using enum flag_state;
+		if (src.isknown_zero() && F.isknown_carry_clear()) {
+			F.set_zero(dst.is_zero());
+			F.set_sign(dst.test_signbit());
+			F.set_overflow(false);
+			return dst;
+		}
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
 		flag_state carry = F.get_carry();
@@ -1349,6 +1441,7 @@ class current_state {
 	void acc_tst_was_zero(reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
+		merge_tst_was_zero_bits(A, arg);
 	}
 	reg24_pair adc24_was_zero(reg24_pair arg) {
 		set_HL(0);
@@ -1427,6 +1520,7 @@ class current_state {
 		F.set_sign(false);
 		F.set_overflow(false);
 		F.set_carry(false);
+		merge_cp_was_zero_bits(A, arg);
 	}
 	void sbc24_was_zero() {
 		set_HL(0);

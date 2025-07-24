@@ -7,13 +7,17 @@ void crt_cmpzero(flag_pair& f, T x) {
 }
 
 template<typename T>
-void crt_cmpu(flag_pair& f, __attribute__((unused)) T x, __attribute__((unused)) T y) {
-	f.set_flags_unknown();
+void crt_cmpu(flag_pair& f, T x, T y) {
+	flag_state carry, zero;
+	unsigned_compare(carry, zero, x, y);
+	f.set_carry(carry);
+	f.set_zero(zero);
 }
 
 template<typename T>
-void crt_cmps(flag_pair& f, __attribute__((unused)) T x, __attribute__((unused)) T y) {
+void crt_cmps(flag_pair& f, T x, T y) {
 	f.set_flags_unknown();
+	f.set_zero(compare_equal(x, y));
 }
 
 template<typename T>
@@ -101,19 +105,25 @@ T crt_divu(T dst, T src) {
 }
 
 template<typename T>
-T crt_divs(T dst, __attribute__((unused)) T src) {
+T crt_divs(T dst, T src) {
+	if (isknown_false(dst.test_signbit()) && isknown_false(src.test_signbit())) {
+		return crt_divu(dst, src);
+	}
 	dst.set_unknown();
 	return dst;
 }
 
 template<typename T>
-T crt_remu(T dst, __attribute__((unused)) T src) {
+T crt_remu(T dst, T src) {
 	dst = rem_unsigned(dst, src);
 	return dst;
 }
 
 template<typename T>
-T crt_rems(T dst, __attribute__((unused)) T src) {
+T crt_rems(T dst, T src) {
+	if (isknown_false(dst.test_signbit()) && isknown_false(src.test_signbit())) {
+		return crt_remu(dst, src);
+	}
 	dst.set_unknown();
 	return dst;
 }
