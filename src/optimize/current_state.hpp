@@ -6,6 +6,7 @@
 #include "../ez80_reg.h"
 #include "../ez80_instruction.h"
 #include "../ez80_known_function.h"
+#include "../ez80_parse.h"
 
 #include "reg_pair.hpp"
 
@@ -488,6 +489,17 @@ class current_state {
 
 	ez80_instruction previous_instruction;
 	ez80_known_function previous_known_func;
+	bool previous_was_known_func;
+
+	void set_previous_instruction(ez80_instruction instruction) {
+		previous_instruction = instruction;
+		previous_was_known_func = false;
+	}
+	void set_previous_instruction(ez80_instruction instruction, ez80_known_function known_func) {
+		previous_instruction = instruction;
+		previous_known_func = known_func;
+		previous_was_known_func = true;
+	}
 
 	flag_pair F;
 	reg8_pair A;
@@ -520,6 +532,7 @@ class current_state {
 	void set_previous_instructions_invalid() {
 		using enum ez80_op_code;
 		previous_instruction.op_code = UNKNOWN;
+		previous_was_known_func = false;
 	}
 
 	void set_just_cxx_reg_unknown() {
@@ -643,6 +656,11 @@ class current_state {
 		reg8_pair ret;
 		ret.set_unknown();
 		return ret;
+	}
+	void set_stack(reg8_pair src, size_t offset) {
+		if (offset < stack_size) {
+			STACK[offset] = src;
+		}
 	}
 
 /* instructions */
@@ -955,6 +973,38 @@ class current_state {
 		F.set_carry(false);
 		merge_assuming_bitwise_xor_is_zero(A, arg);
 	}
+	void acc_cp_was_nc(reg8_pair& arg) {
+		// (A >= arg)
+		reg8_pair arg_mask, acc_mask;
+		acc_mask.set_to_unsigned_range(
+			arg.get_unsigned_minimum(),
+			A.get_unsigned_maximum()
+		);
+		arg_mask.set_to_unsigned_range(
+			arg.get_unsigned_minimum(),
+			A.get_unsigned_maximum()
+		);
+		A.merge_bits(acc_mask);
+		arg.merge_bits(arg_mask);
+	}
+	void acc_cp_was_c(reg8_pair& arg) {
+		// (A < arg) && (arg >= 1) && (A < 255)
+		// A is [0, 254]
+		// arg is [1, 255]
+		reg8_pair arg_mask, acc_mask;
+		F.set_zero(false);
+		acc_mask.set_to_unsigned_range(
+			A.get_unsigned_minimum(),
+			arg.get_unsigned_maximum() - 1
+		);
+		arg_mask.set_to_unsigned_range(
+			A.get_unsigned_minimum() + 1,
+			arg.get_unsigned_maximum()
+		);
+		A.merge_bits(acc_mask);
+		arg.merge_bits(arg_mask);
+	}
+
 	void sbc24_was_zero() {
 		set_HL(0);
 		F.set_sign(false);
@@ -1641,6 +1691,32 @@ class current_state {
 		set16_partial_BC(val.get_upper16());
 	}
 
+	void set64_STACK(reg64_pair val, size_t offset = 0) {
+		reg16_pair up;
+		reg24_pair hi, lo;
+		val.split_value(up, hi, lo);
+		set_stack(lo.get_lo()   , offset + 0);
+		set_stack(lo.get_hi()   , offset + 1);
+		set_stack(lo.get_upper(), offset + 2);
+		set_stack(hi.get_lo()   , offset + 3);
+		set_stack(hi.get_hi()   , offset + 4);
+		set_stack(hi.get_upper(), offset + 5);
+		set_stack(up.get_lo()   , offset + 6);
+		set_stack(up.get_hi()   , offset + 7);
+	}
+
+	void set64_preserve_STACK(reg64_pair val, size_t offset = 0) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+		set16_preserve_BC(val.get_upper16());
+	}
+
+	void set64_partial_STACK(reg64_pair val, size_t offset = 0) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+		set16_partial_BC(val.get_upper16());
+	}
+
 /* set unknown */
 	void HL_set_unknown() {
 		UHL.set_unknown();
@@ -1675,7 +1751,7 @@ class current_state {
 
 	void next_instruction(ez80_instruction instruction);
 
-	void next_known_func(ez80_known_function func);
+	void next_known_func(ez80_instruction instruction, ez80_known_function func);
 
 	void check_previous_instruction(ez80_instruction current_instruction);
 

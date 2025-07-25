@@ -342,12 +342,12 @@ public:
 		return unknown;
 	}
 
-	T get_unknown_bits_as_zeros() const {
+	T get_unsigned_minimum() const {
 		T ret = (bits & mask);
 		return ret;
 	}
 
-	T get_unknown_bits_as_ones() const {
+	T get_unsigned_maximum() const {
 		T ret = (bits & mask);
 		ret |= (~mask);
 		return ret;
@@ -1348,20 +1348,20 @@ inline reg_pair<uint64_t> bit_reverse(reg_pair<uint64_t> x) {
 
 template<typename T>
 void reg_pair_count_ones(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
-	min_bound = popcount(x.get_unknown_bits_as_zeros());
-	max_bound = popcount(x.get_unknown_bits_as_ones());
+	min_bound = popcount(x.get_unsigned_minimum());
+	max_bound = popcount(x.get_unsigned_maximum());
 }
 
 template<typename T>
 void reg_pair_leading_zeros(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
-	min_bound = countl_zero(x.get_unknown_bits_as_zeros());
-	max_bound = countl_zero(x.get_unknown_bits_as_ones());
+	min_bound = countl_zero(x.get_unsigned_minimum());
+	max_bound = countl_zero(x.get_unsigned_maximum());
 }
 
 template<typename T>
 void reg_pair_trailing_zeros(uint8_t& min_bound, uint8_t& max_bound, reg_pair<T> x) {
-	min_bound = countr_zero(x.get_unknown_bits_as_zeros());
-	max_bound = countr_zero(x.get_unknown_bits_as_ones());
+	min_bound = countr_zero(x.get_unsigned_minimum());
+	max_bound = countr_zero(x.get_unsigned_maximum());
 }
 
 #endif /* REG_PAIR_HPP */

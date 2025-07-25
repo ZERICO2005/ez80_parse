@@ -1,4 +1,40 @@
 #include "current_state.hpp"
+
+template <typename T>
+void cmpu_was_nc(__attribute__((unused)) flag_pair& f, T& x, T& y) {
+	// (X >= Y)
+	T x_mask, y_mask;
+	x_mask.set_to_unsigned_range(
+		y.get_unsigned_minimum(),
+		x.get_unsigned_maximum()
+	);
+	y_mask.set_to_unsigned_range(
+		y.get_unsigned_minimum(),
+		x.get_unsigned_maximum()
+	);
+	x.merge_bits(x_mask);
+	y.merge_bits(y_mask);
+}
+
+template <typename T>
+void cmpu_was_c(flag_pair& f, T& x, T& y) {
+	// (X < Y) && (Y >= 1) && (X < UINT(N)_MAX)
+	// X is [0, UINT(N)_MAX - 1]
+	// Y is [1, UINT(N)_MAX]
+	f.set_zero(false);
+	T x_mask, y_mask;
+	x_mask.set_to_unsigned_range(
+		x.get_unsigned_minimum(),
+		y.get_unsigned_maximum() - 1
+	);
+	y_mask.set_to_unsigned_range(
+		x.get_unsigned_minimum() + 1,
+		y.get_unsigned_maximum()
+	);
+	x.merge_bits(x_mask);
+	y.merge_bits(y_mask);
+}
+
 void current_state::check_previous_instruction(ez80_instruction current_instruction) {
 	using enum ez80_op_code;
 
@@ -11,6 +47,114 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 		imm8.set_unknown();
 	}
 
+	if (previous_was_known_func) {
+		switch (current_instruction.op_code) {
+			using enum ez80_known_function;
+			case JR_C:
+			case JP_C: {
+				F.set_carry(false);
+				switch (previous_known_func) {
+					case __lcmpu:
+					{ 
+						reg32_pair x = get32_EUHL();
+						reg32_pair y = get32_AUBC();
+						cmpu_was_nc(F, x, y);
+						set32_EUHL(x);
+						set32_AUBC(y);
+					} break;
+					case __i48cmpu:
+					{ 
+						reg48_pair x = get48_UDEUHL();
+						reg48_pair y = get48_UIYUBC();
+						cmpu_was_nc(F, x, y);
+						set48_UDEUHL(x);
+						set48_UIYUBC(y);
+					} break;
+					case __llcmpu:
+					{ 
+						reg64_pair x = get64_BCUDEUHL();
+						reg64_pair y = get64_STACK(0);
+						cmpu_was_nc(F, x, y);
+						set64_partial_BCUDEUHL(x);
+						set64_STACK(y, 0);
+					} break;
+					default: break;
+				}
+			} break;
+			case JR_NC:
+			case JP_NC: {
+				F.set_carry(true);
+				switch (previous_known_func) {
+					case __lcmpu:
+					{ 
+						reg32_pair x = get32_EUHL();
+						reg32_pair y = get32_AUBC();
+						cmpu_was_c(F, x, y);
+						set32_EUHL(x);
+						set32_AUBC(y);
+					} break;
+					case __i48cmpu:
+					{ 
+						reg48_pair x = get48_UDEUHL();
+						reg48_pair y = get48_UIYUBC();
+						cmpu_was_c(F, x, y);
+						set48_UDEUHL(x);
+						set48_UIYUBC(y);
+					} break;
+					case __llcmpu:
+					{ 
+						reg64_pair x = get64_BCUDEUHL();
+						reg64_pair y = get64_STACK(0);
+						cmpu_was_c(F, x, y);
+						set64_partial_BCUDEUHL(x);
+						set64_STACK(y, 0);
+					} break;
+					default: break;
+				}
+			} break;
+			case JR_Z:
+			case JP_Z: {
+				F.set_zero(false);
+			} break;
+			case JR_NZ:
+			case JP_NZ: {
+				F.set_zero(true);
+				switch (previous_known_func) {
+					case __scmpzero:
+					{ H.set_to_zero(); L.set_to_zero(); } break;
+					case __icmpzero:
+					{ set_HL(0); } break;
+					case __lcmpzero:
+					case __lcmpu:
+					case __lcmps:
+					{ set_HL(0); E.set_to_zero(); } break;
+					case __i48cmpzero:
+					case __i48cmpu:
+					case __i48cmps:
+					{ set_HL(0); set_DE(0); } break;
+					case __llcmpzero:
+					case __llcmpu:
+					case __llcmps:
+					{ B.set_to_zero(); C.set_to_zero(); set_HL(0); set_DE(0); } break;
+					default: break;
+				}
+			} break;
+			case JP_P: {
+				F.set_sign(true);
+			} break;
+			case JP_M: {
+				F.set_sign(false);
+			} break;
+			case JP_PO: {
+				F.set_overflow(true);
+			} break;
+			case JP_PE: {
+				F.set_overflow(false);
+			} break;
+			default: break;
+		}
+		goto finish;
+	}
 	switch (current_instruction.op_code) {
 		case JR_C:
 		case JP_C: {
@@ -36,6 +180,21 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 				case RRC_E: { E.bit_clear(7); reg8_shift_set_flags(E); } break;
 				case RRC_H: { H.bit_clear(7); reg8_shift_set_flags(H); } break;
 				case RRC_L: { L.bit_clear(7); reg8_shift_set_flags(L); } break;
+
+				case CP_A_N  : { acc_cp_was_nc(imm8); } break;
+				case CP_A_B  : { acc_cp_was_nc(B  ); } break;
+				case CP_A_C  : { acc_cp_was_nc(C  ); } break;
+				case CP_A_D  : { acc_cp_was_nc(D  ); } break;
+				case CP_A_E  : { acc_cp_was_nc(E  ); } break;
+				case CP_A_H  : { acc_cp_was_nc(H  ); } break;
+				case CP_A_L  : { acc_cp_was_nc(L  ); } break;
+				case CP_A_IXH: { acc_cp_was_nc(IXH); } break;
+				case CP_A_IXL: { acc_cp_was_nc(IXL); } break;
+				case CP_A_IYH: { acc_cp_was_nc(IYH); } break;
+				case CP_A_IYL: { acc_cp_was_nc(IYL); } break;
+				case CP_A_PHL: { acc_cp_was_nc(unknown8); } break;
+				case CP_A_PIX: { acc_cp_was_nc(unknown8); } break;
+				case CP_A_PIY: { acc_cp_was_nc(unknown8); } break;
 				default: break;
 			}
 		} break;
@@ -63,6 +222,21 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 				case RRC_E: { E.bit_set(7); reg8_shift_set_flags(E); } break;
 				case RRC_H: { H.bit_set(7); reg8_shift_set_flags(H); } break;
 				case RRC_L: { L.bit_set(7); reg8_shift_set_flags(L); } break;
+
+				case CP_A_N  : { acc_cp_was_c(imm8); } break;
+				case CP_A_B  : { acc_cp_was_c(B  ); } break;
+				case CP_A_C  : { acc_cp_was_c(C  ); } break;
+				case CP_A_D  : { acc_cp_was_c(D  ); } break;
+				case CP_A_E  : { acc_cp_was_c(E  ); } break;
+				case CP_A_H  : { acc_cp_was_c(H  ); } break;
+				case CP_A_L  : { acc_cp_was_c(L  ); } break;
+				case CP_A_IXH: { acc_cp_was_c(IXH); } break;
+				case CP_A_IXL: { acc_cp_was_c(IXL); } break;
+				case CP_A_IYH: { acc_cp_was_c(IYH); } break;
+				case CP_A_IYL: { acc_cp_was_c(IYL); } break;
+				case CP_A_PHL: { acc_cp_was_c(unknown8); } break;
+				case CP_A_PIX: { acc_cp_was_c(unknown8); } break;
+				case CP_A_PIY: { acc_cp_was_c(unknown8); } break;
 				default: break;
 			}
 		} break;
@@ -1137,6 +1311,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 		case COUNT:
 			return;
 	}
-	previous_instruction = current_instruction;
+finish:
+	set_previous_instruction(current_instruction);
 	return;
 }

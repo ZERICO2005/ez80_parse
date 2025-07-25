@@ -373,7 +373,7 @@ void optimize_asm(ez80_code_section& program) {
 				// 	current.original_line,
 				// 	ez80_known_function_name[(size_t)current.known_func]
 				// );
-				state.next_known_func(current.known_func);
+				state.next_known_func(current.instruction, current.known_func);
 				printf(
 					"%6zu: %s | %s\n",
 					current.original_line,

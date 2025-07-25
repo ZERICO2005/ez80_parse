@@ -159,7 +159,7 @@ T crt_bitrev(T dst) {
 	return bit_reverse(dst);
 }
 
-void current_state::next_known_func(ez80_known_function func) {
+void current_state::next_known_func(ez80_instruction instruction, ez80_known_function func) {
 	using enum ez80_known_function;
 	using enum ez80_op_code;
 	using enum flag_state;
@@ -831,7 +831,7 @@ void current_state::next_known_func(ez80_known_function func) {
 		case _strnlen: {
 			reg24_pair max_len = get24_STACK(6);
 			set_just_libc_reg_unknown(6);
-			max_len.set_to_unsigned_range(0, max_len.get_unknown_bits_as_ones());
+			max_len.set_to_unsigned_range(0, max_len.get_unsigned_maximum());
 			set_HL(max_len);
 		} break;
 		case _strcmp: {
@@ -963,4 +963,5 @@ void current_state::next_known_func(ez80_known_function func) {
 			set_just_cxx_reg_unknown();
 		} break;
 	}
+	set_previous_instruction(instruction, func);
 }
