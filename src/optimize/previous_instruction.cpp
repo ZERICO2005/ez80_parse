@@ -121,13 +121,13 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 				F.set_zero(true);
 				switch (previous_known_func) {
 					case __scmpzero:
-					{ H.set_to_zero(); L.set_to_zero(); } break;
+					{ set_H(0); set_L(0); } break;
 					case __icmpzero:
 					{ set_HL(0); } break;
 					case __lcmpzero:
 					case __lcmpu:
 					case __lcmps:
-					{ set_HL(0); E.set_to_zero(); } break;
+					{ set_HL(0); set_E(0); } break;
 					case __i48cmpzero:
 					case __i48cmpu:
 					case __i48cmps:
@@ -135,7 +135,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 					case __llcmpzero:
 					case __llcmpu:
 					case __llcmps:
-					{ B.set_to_zero(); C.set_to_zero(); set_HL(0); set_DE(0); } break;
+					{ set_B(0); set_C(0); set_HL(0); set_DE(0); } break;
 					default: break;
 				}
 			} break;
@@ -155,31 +155,47 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 		}
 		goto finish;
 	}
+
+class reg8;
+class reg16;
+
+class CPU {
+	reg8 A;
+	reg8 B;
+
+	reg8& get_A();
+	void set_A(reg8 value);
+
+	// combines A and B into a wider register
+	reg16 get_AB();
+	void set_AB(reg16 value);
+};
+
 	switch (current_instruction.op_code) {
 		case JR_C:
 		case JP_C: {
 			F.set_carry(false);
 			switch (previous_instruction.op_code) {
-				case SBC_A_A: { sbc_a_a(); } break;
+				case SBC_A_A: { set_A(sbc_a_a(get_A())); } break;
 				case SBC_HL_HL: { set_HL(sbc24_hl_hl(get_HL())); } break;
 				case SBC_HL_HL_SIS: { set16_zero_HL(sbc16_hl_hl(get16_HL())); } break;
-				case NEG: { A.set_value(0); acc_neg(); } break;
-				case RLCA: { A.bit_clear(0); } break;
-				case RRCA: { A.bit_clear(7); } break;
-				case RLC_A: { A.bit_clear(0); reg8_shift_set_flags(A); } break;
-				case RLC_B: { B.bit_clear(0); reg8_shift_set_flags(B); } break;
-				case RLC_C: { C.bit_clear(0); reg8_shift_set_flags(C); } break;
-				case RLC_D: { D.bit_clear(0); reg8_shift_set_flags(D); } break;
-				case RLC_E: { E.bit_clear(0); reg8_shift_set_flags(E); } break;
-				case RLC_H: { H.bit_clear(0); reg8_shift_set_flags(H); } break;
-				case RLC_L: { L.bit_clear(0); reg8_shift_set_flags(L); } break;
-				case RRC_A: { A.bit_clear(7); reg8_shift_set_flags(A); } break;
-				case RRC_B: { B.bit_clear(7); reg8_shift_set_flags(B); } break;
-				case RRC_C: { C.bit_clear(7); reg8_shift_set_flags(C); } break;
-				case RRC_D: { D.bit_clear(7); reg8_shift_set_flags(D); } break;
-				case RRC_E: { E.bit_clear(7); reg8_shift_set_flags(E); } break;
-				case RRC_H: { H.bit_clear(7); reg8_shift_set_flags(H); } break;
-				case RRC_L: { L.bit_clear(7); reg8_shift_set_flags(L); } break;
+				case NEG: { set_A(0); set_A(acc_neg(get_A())); } break;
+				case RLCA: { reg8_pair r = get_A(); r.bit_clear(0); set_A(r); } break;
+				case RRCA: { reg8_pair r = get_A(); r.bit_clear(7); set_A(r); } break;
+				case RLC_A: { reg8_pair r = get_A(); r.bit_clear(0); set_A(r); reg8_shift_set_flags(get_A()); } break;
+				case RLC_B: { reg8_pair r = get_A(); r.bit_clear(0); set_B(r); reg8_shift_set_flags(get_B()); } break;
+				case RLC_C: { reg8_pair r = get_A(); r.bit_clear(0); set_C(r); reg8_shift_set_flags(get_C()); } break;
+				case RLC_D: { reg8_pair r = get_A(); r.bit_clear(0); set_D(r); reg8_shift_set_flags(get_D()); } break;
+				case RLC_E: { reg8_pair r = get_A(); r.bit_clear(0); set_E(r); reg8_shift_set_flags(get_E()); } break;
+				case RLC_H: { reg8_pair r = get_A(); r.bit_clear(0); set_H(r); reg8_shift_set_flags(get_H()); } break;
+				case RLC_L: { reg8_pair r = get_A(); r.bit_clear(0); set_L(r); reg8_shift_set_flags(get_L()); } break;
+				case RRC_A: { reg8_pair r = get_A(); r.bit_clear(7); set_A(r); reg8_shift_set_flags(get_A()); } break;
+				case RRC_B: { reg8_pair r = get_A(); r.bit_clear(7); set_B(r); reg8_shift_set_flags(get_B()); } break;
+				case RRC_C: { reg8_pair r = get_A(); r.bit_clear(7); set_C(r); reg8_shift_set_flags(get_C()); } break;
+				case RRC_D: { reg8_pair r = get_A(); r.bit_clear(7); set_D(r); reg8_shift_set_flags(get_D()); } break;
+				case RRC_E: { reg8_pair r = get_A(); r.bit_clear(7); set_E(r); reg8_shift_set_flags(get_E()); } break;
+				case RRC_H: { reg8_pair r = get_A(); r.bit_clear(7); set_H(r); reg8_shift_set_flags(get_H()); } break;
+				case RRC_L: { reg8_pair r = get_A(); r.bit_clear(7); set_L(r); reg8_shift_set_flags(get_L()); } break;
 
 				case CP_A_N  : { acc_cp_was_nc(imm8); } break;
 				case CP_A_B  : { acc_cp_was_nc(B  ); } break;

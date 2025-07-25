@@ -29,16 +29,16 @@ void current_state::next_instruction(ez80_instruction instruction) {
 
 		/* special cases */
 
-		case ADD_A_A: { add_a_a(); } break;
-		case ADC_A_A: { adc_a_a(); } break;
-		case SBC_A_A: { sbc_a_a(); } break;
-		case SUB_A_A: { sub_a_a(); } break;
-		case CP_A_A : {  cp_a_a(); } break;
+		case ADD_A_A: { set_A(add_a_a(get_A())); } break;
+		case ADC_A_A: { set_A(adc_a_a(get_A())); } break;
+		case SBC_A_A: { set_A(sbc_a_a(get_A())); } break;
+		case SUB_A_A: { set_A(sub_a_a(get_A())); } break;
+		case CP_A_A : { set_A( cp_a_a(get_A())); } break;
 
-		case XOR_A_A: { xor_a_a(); } break;
-		case OR_A_A : {  or_a_a(); } break;
-		case AND_A_A: { and_a_a(); } break;
-		case TST_A_A: { tst_a_a(); } break;
+		case XOR_A_A: { set_A(xor_a_a(get_A())); } break;
+		case OR_A_A : { set_A( or_a_a(get_A())); } break;
+		case AND_A_A: { set_A(and_a_a(get_A())); } break;
+		case TST_A_A: { set_A(tst_a_a(get_A())); } break;
 
 		case ADD_HL_HL: { set_HL(add24_hl_hl(get_HL())); } break;
 		case ADD_IX_IX: { set_IX(add24_hl_hl(get_IX())); stack.invalidate_IX(); } break;
@@ -71,132 +71,73 @@ void current_state::next_instruction(ez80_instruction instruction) {
 
 		case EX_AF_AF: {
 			F.set_flags_unknown();
-			A.set_unknown();
+			A_set_unknown();
 		} break;
 
 		case EX_DE_HL: {
-			std::swap(UHL, UDE);
-			std::swap(H, D);
-			std::swap(L, E);
+			full_reg temp = get_full_HL();
+			set_full_HL(get_full_DE());
+			set_full_DE(temp);
 		} break;
 		case EX_DE_HL_SIS: {
-			std::swap(H, D);
-			std::swap(L, E);
-			UHL.set_value(0);
-			UDE.set_value(0);
+			reg16_pair temp = get16_HL();
+			set16_zero_HL(get16_DE());
+			set16_zero_DE(temp);
 		} break;
 		case EXX: {
-			UHL.set_unknown();
-			H.set_unknown();
-			L.set_unknown();
-			UDE.set_unknown();
-			D.set_unknown();
-			E.set_unknown();
-			UBC.set_unknown();
-			B.set_unknown();
-			C.set_unknown();
+			UHL_set_unknown();
+			H_set_unknown();
+			L_set_unknown();
+			UDE_set_unknown();
+			D_set_unknown();
+			E_set_unknown();
+			UBC_set_unknown();
+			B_set_unknown();
+			C_set_unknown();
 		} break;
 
-		case POP_AF: { set_AF(stack.pop()); } break;
-		case POP_BC: { set_BC(stack.pop()); } break;
-		case POP_DE: { set_DE(stack.pop()); } break;
-		case POP_HL: { set_HL(stack.pop()); } break;
-		case POP_IX: { set_IX(stack.pop()); } break;
-		case POP_IY: { set_IY(stack.pop()); } break;
-		case EX_SP_HL: {
-			set_HL(stack.exchange(get_HL()));
-		} break;
-		case EX_SP_IX: {
-			set_IX(stack.exchange(get_IX()));
-			stack.invalidate_IX();
-		} break;
-		case EX_SP_IY: {
-			set_IY(stack.exchange(get_IY()));
-		} break;
-		case INC_BC: {
-			set_BC(get_BC().increment());
-		} break;
-		case INC_DE: {
-			set_DE(get_DE().increment());
-		} break;
-		case INC_HL: {
-			set_HL(get_HL().increment());
-		} break;
-		case INC_SP: {
-			stack.increment();
-		} break;
-		case INC_IX: {
-			set_IX(get_IX().increment());
-			stack.modifiy_IX(+1);
-		} break;
-		case INC_IY: {
-			set_IY(get_IY().increment());
-		} break;
-		case INC_BC_SIS: {
-			set16_zero_BC(get16_BC().increment());
-		} break;
-		case INC_DE_SIS: {
-			set16_zero_DE(get16_DE().increment());
-		} break;
-		case INC_HL_SIS: {
-			set16_zero_HL(get16_HL().increment());
-		} break;
-		case INC_SP_SIS: {
-			SP_set_unknown();
-		} break;
-		case INC_IX_SIS: {
-			set16_zero_IX(get16_IX().increment());
-			stack.invalidate_IX();
-		} break;
-		case INC_IY_SIS: {
-			set16_zero_IY(get16_IY().increment());
-		} break;
-		case DEC_BC: {
-			set_BC(get_BC().decrement());
-		} break;
-		case DEC_DE: {
-			set_DE(get_DE().decrement());
-		} break;
-		case DEC_HL: {
-			set_HL(get_HL().decrement());
-		} break;
-		case DEC_SP: {
-			stack.decrement();
-		} break;
-		case DEC_IX: {
-			set_IX(get_IX().decrement());
-			stack.modifiy_IX(-1);
-		} break;
-		case DEC_IY: {
-			set_IY(get_IY().decrement());
-		} break;
-		case DEC_BC_SIS: {
-			set16_zero_BC(get16_BC().decrement());
-		} break;
-		case DEC_DE_SIS: {
-			set16_zero_DE(get16_DE().decrement());
-		} break;
-		case DEC_HL_SIS: {
-			set16_zero_HL(get16_HL().decrement());
-		} break;
-		case DEC_SP_SIS: {
-			SP_set_unknown();
-		} break;
-		case DEC_IX_SIS: {
-			set16_zero_IX(get16_IX().decrement());
-			stack.invalidate_IX();
-		} break;
-		case DEC_IY_SIS: {
-			set16_zero_IY(get16_IY().decrement());
-		} break;
+		case POP_AF: { set_AF(stack_pop_AF()); } break;
+		case POP_BC: { set_BC(stack_pop()); } break;
+		case POP_DE: { set_DE(stack_pop()); } break;
+		case POP_HL: { set_HL(stack_pop()); } break;
+		case POP_IX: { set_IX(stack_pop()); } break;
+		case POP_IY: { set_IY(stack_pop()); } break;
+		case EX_SP_HL: { set_HL(stack_exchange(get_full_HL())); } break;
+		case EX_SP_IX: { set_IX(stack_exchange(get_full_IX())); } break;
+		case EX_SP_IY: { set_IY(stack_exchange(get_full_IY())); } break;
+
+		case INC_BC: { set_full_BC(reg24_increment(get_full_BC())); } break;
+		case INC_DE: { set_full_DE(reg24_increment(get_full_DE())); } break;
+		case INC_HL: { set_full_HL(reg24_increment(get_full_HL())); } break;
+		case INC_IX: { set_full_IX(reg24_increment(get_full_IX())); } break;
+		case INC_IY: { set_full_IY(reg24_increment(get_full_IY())); } break;
+
+		case INC_BC_SIS: { set16_zero_BC(reg16_increment(get16_BC())); } break;
+		case INC_DE_SIS: { set16_zero_DE(reg16_increment(get16_DE())); } break;
+		case INC_HL_SIS: { set16_zero_HL(reg16_increment(get16_HL())); } break;
+		case INC_IX_SIS: { set16_zero_IX(reg16_increment(get16_IX())); } break;
+		case INC_IY_SIS: { set16_zero_IY(reg16_increment(get16_IY())); } break;
+
+		case DEC_BC: { set_full_BC(reg24_decrement(get_full_BC())); } break;
+		case DEC_DE: { set_full_DE(reg24_decrement(get_full_DE())); } break;
+		case DEC_HL: { set_full_HL(reg24_decrement(get_full_HL())); } break;
+		case DEC_IX: { set_full_IX(reg24_decrement(get_full_IX())); } break;
+		case DEC_IY: { set_full_IY(reg24_decrement(get_full_IY())); } break;
+
+		case DEC_BC_SIS: { set16_zero_BC(reg16_decrement(get16_BC())); } break;
+		case DEC_DE_SIS: { set16_zero_DE(reg16_decrement(get16_DE())); } break;
+		case DEC_HL_SIS: { set16_zero_HL(reg16_decrement(get16_HL())); } break;
+		case DEC_IX_SIS: { set16_zero_IX(reg16_decrement(get16_IX())); } break;
+		case DEC_IY_SIS: { set16_zero_IY(reg16_decrement(get16_IY())); } break;
+
 		case MLT_BC: {
-			set16_zero_BC(reg_mlt(B, C));
+			set16_zero_BC(reg_mlt(get_B(), get_C()));
 		} break;
 		case MLT_DE: {
-			set16_zero_DE(reg_mlt(D, E));
+			set16_zero_DE(reg_mlt(get_D(), get_E()));
 		} break;
 		case MLT_HL: {
-			set16_zero_HL(reg_mlt(H, L));
+			set16_zero_HL(reg_mlt(get_H(), get_L()));
 		} break;
 		case MLT_SP: {
 			SP_set_unknown();

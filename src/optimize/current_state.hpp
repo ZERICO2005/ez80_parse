@@ -845,24 +845,6 @@ class current_state {
 		previous_was_known_func = true;
 	}
 
-	flag_pair F;
-	reg8_pair A;
-	reg8_pair C;
-	reg8_pair B;
-	reg8_pair UBC;
-	reg8_pair E;
-	reg8_pair D;
-	reg8_pair UDE;
-	reg8_pair L;
-	reg8_pair H;
-	reg8_pair UHL;
-	reg8_pair IXL;
-	reg8_pair IXH;
-	reg8_pair UIX;
-	reg8_pair IYL;
-	reg8_pair IYH;
-	reg8_pair UIY;
-
 	stack_frame stack;
 
 	reg_pointer PHL;
@@ -876,42 +858,249 @@ class current_state {
 		reg24_pair value;
 	};
 
-	full_reg HL;
-	full_reg DE;
-	full_reg BC;
-	full_reg IX;
-	full_reg IY;
+	flag_pair F;
 
-	full_reg get_full_HL() {
+	enum class reg_bank_index {
+		A,
+		C,
+		B,
+		UBC,
+		E,
+		D,
+		UDE,
+		L,
+		H,
+		UHL,
+		IXL,
+		IXH,
+		UIX,
+		IYL,
+		IYH,
+		UIY,
+		COUNT,
+		BC = C,
+		DE = E,
+		HL = L,
+		IX = IXL,
+		IY = IYL,
+	};
+
+	reg8_pair reg_bank[static_cast<size_t>(reg_bank_index::COUNT)];
+
+	void set16_preserve_reg(reg_bank_index index, reg16_pair value) {
+		size_t i = static_cast<size_t>(index);
+		reg_bank[i + 0] = value.get_lo();
+		reg_bank[i + 1] = value.get_hi();
+	}
+	void set16_zero_reg(reg_bank_index index, reg16_pair value) {
+		size_t i = static_cast<size_t>(index);
+		reg_bank[i + 0] = value.get_lo();
+		reg_bank[i + 1] = value.get_hi();
+		reg_bank[i + 2].set_to_zero();
+	}
+	void set16_partial_reg(reg_bank_index index, reg16_pair value) {
+		size_t i = static_cast<size_t>(index);
+		reg_bank[i + 0] = value.get_lo();
+		reg_bank[i + 1] = value.get_hi();
+		reg_bank[i + 2].set_unknown();
+	}
+	void set24_reg(reg_bank_index index, reg24_pair value) {
+		size_t i = static_cast<size_t>(index);
+		reg_bank[i + 0] = value.get_lo();
+		reg_bank[i + 1] = value.get_hi();
+		reg_bank[i + 2] = value.get_upper();
+	}
+	void set24_reg(reg_bank_index index, uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(index, arg);
+	}
+
+/* get reg8 */
+
+	flag_pair get_F() const {
+		return F;
+	}
+	reg8_pair get_A() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::A)];
+	}
+	reg8_pair get_C() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::C)];
+	}
+	reg8_pair get_B() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::B)];
+	}
+	reg8_pair get_UBC() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::UBC)];
+	}
+	reg8_pair get_E() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::E)];
+	}
+	reg8_pair get_D() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::D)];
+	}
+	reg8_pair get_UDE() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::UDE)];
+	}
+	reg8_pair get_L() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::L)];
+	}
+	reg8_pair get_H() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::H)];
+	}
+	reg8_pair get_UHL() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::UHL)];
+	}
+	reg8_pair get_IXL() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::IXL)];
+	}
+	reg8_pair get_IXH() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::IXH)];
+	}
+	reg8_pair get_UIX() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::UIX)];
+	}
+	reg8_pair get_IYL() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::IYL)];
+	}
+	reg8_pair get_IYH() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::IYH)];
+	}
+	reg8_pair get_UIY() const {
+		return reg_bank[static_cast<size_t>(reg_bank_index::UIY)];
+	}
+
+/* get reg16 */
+
+	reg16_pair get16_HL() const {
+		reg16_pair ret;
+		ret.set_value(get_H(), get_L());
+		return ret;
+	}
+	reg16_pair get16_DE() const {
+		reg16_pair ret;
+		ret.set_value(get_D(), get_E());
+		return ret;
+	}
+	reg16_pair get16_BC() const {
+		reg16_pair ret;
+		ret.set_value(get_B(), get_C());
+		return ret;
+	}
+	reg16_pair get16_IX() const {
+		reg16_pair ret;
+		ret.set_value(get_IXH(), get_IXL());
+		return ret;
+	}
+	reg16_pair get16_IY() const {
+		reg16_pair ret;
+		ret.set_value(get_IYH(), get_IYL());
+		return ret;
+	}
+
+/* get reg24 */
+
+	reg24_pair get_AF() const {
+		reg8_pair upper;
+		reg8_pair flags;
+		reg24_pair ret;
+		upper.set_unknown();
+		F.export_flag_pair(flags);
+		ret.set_value(upper, get_A(), flags);
+		return ret;
+	}
+	reg24_pair get_HL() const {
+		reg24_pair ret;
+		ret.set_value(get_UHL(), get_H(), get_L());
+		return ret;
+	}
+	reg24_pair get_DE() const {
+		reg24_pair ret;
+		ret.set_value(get_UDE(), get_D(), get_E());
+		return ret;
+	}
+	reg24_pair get_BC() const {
+		reg24_pair ret;
+		ret.set_value(get_UBC(), get_B(), get_C());
+		return ret;
+	}
+	reg24_pair get_IX() const {
+		reg24_pair ret;
+		ret.set_value(get_UIX(), get_IXH(), get_IXL());
+		return ret;
+	}
+	reg24_pair get_IY() const {
+		reg24_pair ret;
+		ret.set_value(get_UIY(), get_IYH(), get_IYL());
+		return ret;
+	}
+
+/* get full reg */
+
+	full_reg get_full_HL() const {
 		full_reg ret;
 		ret.ptr = PHL;
 		ret.value = get_HL();
 		return ret;
 	}
-	full_reg get_full_DE() {
+	full_reg get_full_DE() const {
 		full_reg ret;
 		ret.ptr = PDE;
 		ret.value = get_DE();
 		return ret;
 	}
-	full_reg get_full_BC() {
+	full_reg get_full_BC() const {
 		full_reg ret;
 		ret.ptr = PBC;
 		ret.value = get_BC();
 		return ret;
 	}
-	full_reg get_full_IX() {
+	full_reg get_full_IX() const {
 		full_reg ret;
 		ret.ptr = PIX;
 		ret.value = get_IX();
 		return ret;
 	}
-	full_reg get_full_IY() {
+	full_reg get_full_IY() const {
 		full_reg ret;
 		ret.ptr = PIY;
 		ret.value = get_IY();
 		return ret;
 	}
+
+/* get CRT reg */
+
+	reg32_pair get32_EUHL() const {
+		reg32_pair ret;
+		ret.set_value(get_E(), get_UHL(), get_H(), get_L());
+		return ret;
+	}
+
+	reg32_pair get32_AUBC() const {
+		reg32_pair ret;
+		ret.set_value(get_A(), get_UBC(), get_B(), get_C());
+		return ret;
+	}
+
+	reg48_pair get48_UDEUHL() const {
+		reg48_pair ret;
+		ret.set_value(get_DE(), get_HL());
+		return ret;
+	}
+
+	reg48_pair get48_UIYUBC() const {
+		reg48_pair ret;
+		ret.set_value(get_IY(), get_BC());
+		return ret;
+	}
+
+	reg64_pair get64_BCUDEUHL() const {
+		reg64_pair ret;
+		ret.set_value(get16_BC(), get_DE(), get_HL());
+		return ret;
+	}
+
+/* set pointers */
 
 	void update_PHL() {
 		PHL.set_value(get_HL());
@@ -927,6 +1116,436 @@ class current_state {
 	}
 	void update_PIY() {
 		PIY.set_value(get_IY());
+	}
+
+/* set reg8 */
+
+	void set_F(flag_pair value) {
+		F = value;
+	}
+	void set_A(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::A)] = value;
+	}
+	void set_C(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::C)] = value;
+		update_PBC();
+	}
+	void set_B(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::B)] = value;
+		update_PBC();
+	}
+	void set_UBC(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UBC)] = value;
+		update_PBC();
+	}
+	void set_E(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::E)] = value;
+		update_PDE();
+	}
+	void set_D(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::D)] = value;
+		update_PDE();
+	}
+	void set_UDE(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UDE)] = value;
+		update_PDE();
+	}
+	void set_L(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::L)] = value;
+		update_PHL();
+	}
+	void set_H(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::H)] = value;
+		update_PHL();
+	}
+	void set_UHL(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UHL)] = value;
+		update_PHL();
+	}
+	void set_IXL(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXL)] = value;
+		update_PIX();
+	}
+	void set_IXH(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXH)] = value;
+		update_PIX();
+	}
+	void set_UIX(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIX)] = value;
+		update_PIX();
+	}
+	void set_IYL(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYL)] = value;
+		update_PIY();
+	}
+	void set_IYH(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYH)] = value;
+		update_PIY();
+	}
+	void set_UIY(reg8_pair value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIY)] = value;
+		update_PIY();
+	}
+
+	void set_A(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::A)].set_value(value);
+	}
+	void set_C(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::C)].set_value(value);
+		update_PBC();
+	}
+	void set_B(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::B)].set_value(value);
+		update_PBC();
+	}
+	void set_UBC(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UBC)].set_value(value);
+		update_PBC();
+	}
+	void set_E(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::E)].set_value(value);
+		update_PDE();
+	}
+	void set_D(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::D)].set_value(value);
+		update_PDE();
+	}
+	void set_UDE(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UDE)].set_value(value);
+		update_PDE();
+	}
+	void set_L(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::L)].set_value(value);
+		update_PHL();
+	}
+	void set_H(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::H)].set_value(value);
+		update_PHL();
+	}
+	void set_UHL(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UHL)].set_value(value);
+		update_PHL();
+	}
+	void set_IXL(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXL)].set_value(value);
+		update_PIX();
+	}
+	void set_IXH(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXH)].set_value(value);
+		update_PIX();
+	}
+	void set_UIX(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIX)].set_value(value);
+		update_PIX();
+	}
+	void set_IYL(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYL)].set_value(value);
+		update_PIY();
+	}
+	void set_IYH(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYH)].set_value(value);
+		update_PIY();
+	}
+	void set_UIY(uint8_t value) {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIY)].set_value(value);
+		update_PIY();
+	}
+
+	void A_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::A)].set_unknown();
+	}
+	void C_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::C)].set_unknown();
+		update_PBC();
+	}
+	void B_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::B)].set_unknown();
+		update_PBC();
+	}
+	void UBC_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::UBC)].set_unknown();
+		update_PBC();
+	}
+	void E_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::E)].set_unknown();
+		update_PDE();
+	}
+	void D_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::D)].set_unknown();
+		update_PDE();
+	}
+	void UDE_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::UDE)].set_unknown();
+		update_PDE();
+	}
+	void L_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::L)].set_unknown();
+		update_PHL();
+	}
+	void H_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::H)].set_unknown();
+		update_PHL();
+	}
+	void UHL_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::UHL)].set_unknown();
+		update_PHL();
+	}
+	void IXL_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXL)].set_unknown();
+		update_PIX();
+	}
+	void IXH_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::IXH)].set_unknown();
+		update_PIX();
+	}
+	void UIX_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIX)].set_unknown();
+		update_PIX();
+	}
+	void IYL_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYL)].set_unknown();
+		update_PIY();
+	}
+	void IYH_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::IYH)].set_unknown();
+		update_PIY();
+	}
+	void UIY_set_unknown() {
+		reg_bank[static_cast<size_t>(reg_bank_index::UIY)].set_unknown();
+		update_PIY();
+	}
+
+/* set reg16 */
+
+	void set16_preserve_HL(reg16_pair value) {
+		set16_preserve_reg(reg_bank_index::HL, value);
+		update_PHL();
+	}
+	void set16_preserve_DE(reg16_pair value) {
+		set16_preserve_reg(reg_bank_index::DE, value);
+		update_PDE();
+	}
+	void set16_preserve_BC(reg16_pair value) {
+		set16_preserve_reg(reg_bank_index::BC, value);
+		update_PBC();
+	}
+	void set16_preserve_IX(reg16_pair value) {
+		set16_preserve_reg(reg_bank_index::IX, value);
+		update_PIX();
+	}
+	void set16_preserve_IY(reg16_pair value) {
+		set16_preserve_reg(reg_bank_index::IY, value);
+		update_PIY();
+	}
+
+	void set16_zero_HL(reg16_pair value) {
+		set16_zero_reg(reg_bank_index::HL, value);
+		update_PHL();
+	}
+	void set16_zero_DE(reg16_pair value) {
+		set16_zero_reg(reg_bank_index::DE, value);
+		update_PDE();
+	}
+	void set16_zero_BC(reg16_pair value) {
+		set16_zero_reg(reg_bank_index::BC, value);
+		update_PBC();
+	}
+	void set16_zero_IX(reg16_pair value) {
+		set16_zero_reg(reg_bank_index::IX, value);
+		update_PIX();
+	}
+	void set16_zero_IY(reg16_pair value) {
+		set16_zero_reg(reg_bank_index::IY, value);
+		update_PIY();
+	}
+
+	void set16_partial_HL(reg16_pair value) {
+		set16_partial_reg(reg_bank_index::HL, value);
+		update_PHL();
+	}
+	void set16_partial_DE(reg16_pair value) {
+		set16_partial_reg(reg_bank_index::DE, value);
+		update_PDE();
+	}
+	void set16_partial_BC(reg16_pair value) {
+		set16_partial_reg(reg_bank_index::BC, value);
+		update_PBC();
+	}
+	void set16_partial_IX(reg16_pair value) {
+		set16_partial_reg(reg_bank_index::IX, value);
+		update_PIX();
+	}
+	void set16_partial_IY(reg16_pair value) {
+		set16_partial_reg(reg_bank_index::IY, value);
+		update_PIY();
+	}
+
+/* set reg24 */
+
+	void set_AF(reg24_pair val) {
+		reg8_pair flags;
+		set_A(val.get_lo());
+		F.import_flag_pair(val.get_hi());
+	}
+
+	void set_HL(reg24_pair value) {
+		set24_reg(reg_bank_index::HL, value);
+		update_PHL();
+	}
+	void set_DE(reg24_pair value) {
+		set24_reg(reg_bank_index::DE, value);
+		update_PDE();
+	}
+	void set_BC(reg24_pair value) {
+		set24_reg(reg_bank_index::BC, value);
+		update_PBC();
+	}
+	void set_IX(reg24_pair value) {
+		set24_reg(reg_bank_index::IX, value);
+		update_PIX();
+	}
+	void set_IY(reg24_pair value) {
+		set24_reg(reg_bank_index::IY, value);
+		update_PIY();
+	}
+
+	void set_HL(uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(reg_bank_index::HL, arg);
+		update_PHL();
+	}
+	void set_DE(uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(reg_bank_index::DE, arg);
+		update_PDE();
+	}
+	void set_BC(uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(reg_bank_index::BC, arg);
+		update_PBC();
+	}
+	void set_IX(uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(reg_bank_index::IX, arg);
+		update_PIX();
+	}
+	void set_IY(uint24_t value) {
+		reg24_pair arg;
+		arg.set_value(value);
+		set24_reg(reg_bank_index::IY, arg);
+		update_PIY();
+	}
+
+	void HL_set_unknown() {
+		L_set_unknown();
+		H_set_unknown();
+		UHL_set_unknown();
+		update_PHL();
+	}
+	void DE_set_unknown() {
+		E_set_unknown();
+		D_set_unknown();
+		UDE_set_unknown();
+		update_PDE();
+	}
+	void BC_set_unknown() {
+		C_set_unknown();
+		B_set_unknown();
+		UBC_set_unknown();
+		update_PBC();
+	}
+	void IX_set_unknown() {
+		IXL_set_unknown();
+		IXH_set_unknown();
+		UIX_set_unknown();
+		update_PIX();
+	}
+	void IY_set_unknown() {
+		IYL_set_unknown();
+		IYH_set_unknown();
+		UIY_set_unknown();
+		update_PIY();
+	}
+
+/* set full reg */
+
+	void set_full_HL(full_reg src) {
+		set24_reg(reg_bank_index::HL, src.value);
+		PHL = src.ptr;
+	}
+	void set_full_DE(full_reg src) {
+		set24_reg(reg_bank_index::DE, src.value);
+		PDE = src.ptr;
+	}
+	void set_full_BC(full_reg src) {
+		set24_reg(reg_bank_index::BC, src.value);
+		PBC = src.ptr;
+	}
+	void set_full_IX(full_reg src) {
+		set24_reg(reg_bank_index::IX, src.value);
+		PIX = src.ptr;
+	}
+	void set_full_IY(full_reg src) {
+		set24_reg(reg_bank_index::IY, src.value);
+		PIY = src.ptr;
+	}
+
+/* set CRT reg */
+
+	void set32_EUHL(reg32_pair val) {
+		set_E(val.get_hi8());
+		set_HL(val.get_lo24());
+	}
+
+	void set32_AUBC(reg32_pair val) {
+		set_A(val.get_hi8());
+		set_BC(val.get_lo24());
+	}
+
+	void set48_UDEUHL(reg48_pair val) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+	}
+
+	void set48_UIYUBC(reg48_pair val) {
+		set_IY(val.get_hi24());
+		set_BC(val.get_lo24());
+	}
+
+	void set64_zero_BCUDEUHL(reg64_pair val) {
+		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
+		set16_zero_BC(val.get_upper16());
+	}
+
+	void set64_preserve_BCUDEUHL(reg64_pair val) {
+		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
+		set16_preserve_BC(val.get_upper16());;
+	}
+
+	void set64_partial_BCUDEUHL(reg64_pair val) {
+		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
+		set16_partial_BC(val.get_upper16());
+	}
+
+	void set64_STACK(reg64_pair val, size_t offset = 0) {
+		reg16_pair up;
+		reg24_pair hi, lo;
+		val.split_value(up, hi, lo);
+		stack.write_base(lo.get_lo()   , offset + 0);
+		stack.write_base(lo.get_hi()   , offset + 1);
+		stack.write_base(lo.get_upper(), offset + 2);
+		stack.write_base(hi.get_lo()   , offset + 3);
+		stack.write_base(hi.get_hi()   , offset + 4);
+		stack.write_base(hi.get_upper(), offset + 5);
+		stack.write_base(up.get_lo()   , offset + 6);
+		stack.write_base(up.get_hi()   , offset + 7);
 	}
 
 	void set_pointers_invalid() {
@@ -1017,14 +1636,14 @@ class current_state {
 		write8(src, ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
 	}
 
-	void write24(reg24_pair src, reg_pointer& src_ptr, reg_pointer& ptr, int offset = 0) {
+	void write24(full_reg src, reg_pointer& ptr, int offset = 0) {
 		using enum reg_pointer_type;
-		if (src_ptr.is_valid()) {
+		if (src.ptr.is_valid()) {
 			lost_control_of_pointer();
 		}
 		switch (ptr.get_type()) {
 			case STACK: {
-				stack.write24(src, ptr, offset);
+				stack.write24(src.value, ptr, offset);
 			} break;
 			default: {
 				unknown_write();
@@ -1032,15 +1651,46 @@ class current_state {
 		}
 	}
 
-	void write24(reg24_pair src, reg_pointer& src_ptr, reg_pointer& ptr, reg8_pair offset) {
+	void write24(full_reg src, reg_pointer& ptr, reg8_pair offset) {
 		if (!offset.isknown_fully()) {
-			if (src_ptr.is_valid()) {
+			if (src.ptr.is_valid()) {
 				lost_control_of_pointer();
 			}
 			unknown_write();
 			return;
 		}
-		write24(src, src_ptr, ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+		write24(src, ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+	}
+
+	void stack_push(full_reg src) {
+		if (src.ptr.is_valid()) {
+			lost_control_of_pointer();
+		}
+		stack.push(src.value);
+	}
+	reg24_pair stack_pop() {
+		return stack.pop();
+	}
+	reg24_pair stack_exchange(full_reg arg) {
+		if (arg.ptr.is_valid()) {
+			lost_control_of_pointer();
+		}
+		return stack.exchange(arg.value);
+	}
+	reg24_pair stack_pop_AF() {
+		return stack.pop();
+	}
+	void stack_push_AF(reg24_pair arg) {
+		stack.push(arg);
+	}
+
+	void pea_stack(full_reg src, reg8_pair offset) {
+		full_reg dst;
+		reg24_pair extend;
+		extend.set_sign_extend(offset);
+		dst.value = (src.value + extend);
+		dst.ptr.modify_offset(extend);
+		stack_push(dst);
 	}
 
 	static constexpr size_t stack_size = 12;
@@ -1061,58 +1711,58 @@ class current_state {
 	}
 
 	void set_just_cxx_reg_unknown() {
-		A.set_unknown();
-		C.set_unknown();
-		B.set_unknown();
-		UBC.set_unknown();
-		E.set_unknown();
-		D.set_unknown();
-		UDE.set_unknown();
-		L.set_unknown();
-		H.set_unknown();
-		UHL.set_unknown();
-		IYL.set_unknown();
-		IYH.set_unknown();
-		UIY.set_unknown();
+		A_set_unknown();
+		C_set_unknown();
+		B_set_unknown();
+		UBC_set_unknown();
+		E_set_unknown();
+		D_set_unknown();
+		UDE_set_unknown();
+		L_set_unknown();
+		H_set_unknown();
+		UHL_set_unknown();
+		IYL_set_unknown();
+		IYH_set_unknown();
+		UIY_set_unknown();
 		set_pointers_invalid();
 		F.set_flags_unknown();
 	}
 
 	void set_just_libc_reg_unknown(size_t stack_used) {
-		A.set_unknown();
-		C.set_unknown();
-		B.set_unknown();
-		UBC.set_unknown();
-		E.set_unknown();
-		D.set_unknown();
-		UDE.set_unknown();
-		L.set_unknown();
-		H.set_unknown();
-		UHL.set_unknown();
-		IYL.set_unknown();
-		IYH.set_unknown();
-		UIY.set_unknown();
+		A_set_unknown();
+		C_set_unknown();
+		B_set_unknown();
+		UBC_set_unknown();
+		E_set_unknown();
+		D_set_unknown();
+		UDE_set_unknown();
+		L_set_unknown();
+		H_set_unknown();
+		UHL_set_unknown();
+		IYL_set_unknown();
+		IYH_set_unknown();
+		UIY_set_unknown();
 		F.set_flags_unknown();
 		stack.set_stack_base_unknown(stack_used);
 	}
 
 	void set_just_reg_unknown() {
-		A.set_unknown();
-		C.set_unknown();
-		B.set_unknown();
-		UBC.set_unknown();
-		E.set_unknown();
-		D.set_unknown();
-		UDE.set_unknown();
-		L.set_unknown();
-		H.set_unknown();
-		UHL.set_unknown();
-		IXL.set_unknown();
-		IXH.set_unknown();
-		UIX.set_unknown();
-		IYL.set_unknown();
-		IYH.set_unknown();
-		UIY.set_unknown();
+		A_set_unknown();
+		C_set_unknown();
+		B_set_unknown();
+		UBC_set_unknown();
+		E_set_unknown();
+		D_set_unknown();
+		UDE_set_unknown();
+		L_set_unknown();
+		H_set_unknown();
+		UHL_set_unknown();
+		IXL_set_unknown();
+		IXH_set_unknown();
+		UIX_set_unknown();
+		IYL_set_unknown();
+		IYH_set_unknown();
+		UIY_set_unknown();
 	}
 
 	void set_all_reg_unknown() {
@@ -1123,15 +1773,29 @@ class current_state {
 
 /* stack operations */
 
-	void pea_stack(reg24_pair src, reg8_pair offset) {
-		reg24_pair dst;
-		reg24_pair extend;
-		extend.set_sign_extend(offset);
-		dst = (src + extend);
-		stack.push(dst);
-	}
+
 
 /* instructions */
+
+	full_reg reg24_increment(full_reg arg) {
+		arg.ptr.modify_offset(+1);
+		arg.value.increment();
+		return arg;
+	}
+	full_reg reg24_decrement(full_reg arg) {
+		arg.ptr.modify_offset(-1);
+		arg.value.decrement();
+		return arg;
+	}
+
+	reg16_pair reg16_increment(reg16_pair arg) {
+		arg.increment();
+		return arg;
+	}
+	reg16_pair reg16_decrement(reg16_pair arg) {
+		arg.decrement();
+		return arg;
+	}
 
 	void set_addition_overflow_flags(
 		flag_state result, flag_state x, flag_state y
@@ -1244,8 +1908,7 @@ class current_state {
 		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
 		return dst;
 	}
-	void acc_add(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_add(reg8_pair dst, reg8_pair src) {
 		using enum flag_state;
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
@@ -1256,9 +1919,9 @@ class current_state {
 		flag_state result_sign = dst.test_signbit();
 		F.set_sign(result_sign);
 		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		return dst;
 	}
-	void acc_adc(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_adc(reg8_pair dst, reg8_pair src) {
 		using enum flag_state;
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
@@ -1269,9 +1932,9 @@ class current_state {
 		flag_state result_sign = dst.test_signbit();
 		F.set_sign(result_sign);
 		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		return dst;
 	}
-	void acc_sbc(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_sbc(reg8_pair dst, reg8_pair src) {
 		using enum flag_state;
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
@@ -1282,9 +1945,22 @@ class current_state {
 		flag_state result_sign = dst.test_signbit();
 		F.set_sign(result_sign);
 		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		return dst;
 	}
-	void acc_sub(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_sub(reg8_pair dst, reg8_pair src) {
+		using enum flag_state;
+		flag_state dst_sign = dst.test_signbit();
+		flag_state src_sign = src.test_signbit();
+		flag_state carry = known_false;
+		dst = subtract_with_carry(dst, src, carry);
+		F.set_carry(carry);
+		F.set_zero(dst.is_zero());
+		flag_state result_sign = dst.test_signbit();
+		F.set_sign(result_sign);
+		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		return dst;
+	}
+	void acc_cp(reg8_pair dst, reg8_pair src) {
 		using enum flag_state;
 		flag_state dst_sign = dst.test_signbit();
 		flag_state src_sign = src.test_signbit();
@@ -1296,71 +1972,57 @@ class current_state {
 		F.set_sign(result_sign);
 		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
 	}
-	void acc_cp(reg8_pair src) {
-		reg8_pair dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = known_false;
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
-	}
-	void acc_xor(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_xor(reg8_pair dst, reg8_pair src) {
 		F.set_carry(false);
 		dst = dst ^ src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 		F.set_overflow(dst.is_parity_even());
+		return dst;
 	}
-	void acc_or(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_or(reg8_pair dst, reg8_pair src) {
 		F.set_carry(false);
 		dst = dst | src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 		F.set_overflow(dst.is_parity_even());
+		return dst;
 	}
-	void acc_and(reg8_pair src) {
-		reg8_pair& dst = A;
+	reg8_pair acc_and(reg8_pair dst, reg8_pair src) {
+		F.set_carry(false);
+		dst = dst & src;
+		F.set_zero(dst.is_zero());
+		F.set_sign(dst.test_signbit());
+		F.set_overflow(dst.is_parity_even());
+		return dst;
+	}
+	void acc_tst(reg8_pair dst, reg8_pair src) {
 		F.set_carry(false);
 		dst = dst & src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 		F.set_overflow(dst.is_parity_even());
 	}
-	void acc_tst(reg8_pair src) {
-		reg8_pair dst = A;
-		F.set_carry(false);
-		dst = dst & src;
-		F.set_zero(dst.is_zero());
-		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
-	}
-	void acc_or_was_zero(reg8_pair& arg) {
+	void acc_or_was_zero(reg8_pair& acc, reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
-		A.set_value(0);
+		acc.set_value(0);
 		arg.set_value(0);
 	}
-	void acc_xor_was_zero(reg8_pair& arg) {
+	void acc_xor_was_zero(reg8_pair& acc, reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
-		A.set_value(0);
+		acc.set_value(0);
 	}
-	void acc_and_was_zero(reg8_pair& arg) {
+	void acc_and_was_zero(reg8_pair& acc, reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
-		A.set_value(0);
+		acc.set_value(0);
 	}
-	void acc_tst_was_zero(reg8_pair& arg) {
+	void acc_tst_was_zero(reg8_pair& acc, reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(true);
-		merge_assuming_bitwise_and_is_zero(A, arg);
+		merge_assuming_bitwise_and_is_zero(acc, arg);
 	}
 	reg24_pair adc24_was_zero(reg24_pair arg) {
 		set_HL(0);
@@ -1393,8 +2055,8 @@ class current_state {
 		}
 		return arg;
 	}
-	void acc_add_was_zero(reg8_pair& arg) {
-		A.set_value(0);
+	void acc_add_was_zero(reg8_pair& acc, reg8_pair& arg) {
+		acc.set_value(0);
 		F.set_sign(false);
 		if (F.isknown_carry_clear() || arg.isknown_zero()) {
 			// carry is only cleared when doing 0 += 0
@@ -1408,8 +2070,8 @@ class current_state {
 			F.set_carry(true);
 		}
 	}
-	void acc_adc_was_zero(reg8_pair& arg) {
-		A.set_value(0);
+	void acc_adc_was_zero(reg8_pair& acc, reg8_pair& arg) {
+		acc.set_value(0);
 		F.set_sign(false);
 		if (F.isknown_carry_clear()) {
 			// carry is only cleared when doing 0 += 0
@@ -1423,53 +2085,53 @@ class current_state {
 		}
 		return;
 	}
-	void acc_sbc_was_zero(reg8_pair arg) {
-		A.set_value(0);
+	void acc_sbc_was_zero(reg8_pair& acc, reg8_pair arg) {
+		acc.set_value(0);
 		F.set_sign(false);
 		F.set_overflow(false);
 		F.set_carry(false);
 	}
-	void acc_sub_was_zero(reg8_pair arg) {
-		A.set_value(0);
+	void acc_sub_was_zero(reg8_pair& acc, reg8_pair arg) {
+		acc.set_value(0);
 		F.set_sign(false);
 		F.set_overflow(false);
 		F.set_carry(false);
 	}
-	void acc_cp_was_zero(reg8_pair& arg) {
+	void acc_cp_was_zero(reg8_pair& acc, reg8_pair& arg) {
 		F.set_sign(false);
 		F.set_overflow(false);
 		F.set_carry(false);
-		merge_assuming_bitwise_xor_is_zero(A, arg);
+		merge_assuming_bitwise_xor_is_zero(acc, arg);
 	}
-	void acc_cp_was_nc(reg8_pair& arg) {
+	void acc_cp_was_nc(reg8_pair& acc, reg8_pair& arg) {
 		// (A >= arg)
 		reg8_pair arg_mask, acc_mask;
 		acc_mask.set_to_unsigned_range(
 			arg.get_unsigned_minimum(),
-			A.get_unsigned_maximum()
+			acc.get_unsigned_maximum()
 		);
 		arg_mask.set_to_unsigned_range(
 			arg.get_unsigned_minimum(),
-			A.get_unsigned_maximum()
+			acc.get_unsigned_maximum()
 		);
-		A.merge_bits(acc_mask);
+		acc.merge_bits(acc_mask);
 		arg.merge_bits(arg_mask);
 	}
-	void acc_cp_was_c(reg8_pair& arg) {
+	void acc_cp_was_c(reg8_pair& acc, reg8_pair& arg) {
 		// (A < arg) && (arg >= 1) && (A < 255)
 		// A is [0, 254]
 		// arg is [1, 255]
 		reg8_pair arg_mask, acc_mask;
 		F.set_zero(false);
 		acc_mask.set_to_unsigned_range(
-			A.get_unsigned_minimum(),
+			acc.get_unsigned_minimum(),
 			arg.get_unsigned_maximum() - 1
 		);
 		arg_mask.set_to_unsigned_range(
-			A.get_unsigned_minimum() + 1,
+			acc.get_unsigned_minimum() + 1,
 			arg.get_unsigned_maximum()
 		);
-		A.merge_bits(acc_mask);
+		acc.merge_bits(acc_mask);
 		arg.merge_bits(arg_mask);
 	}
 
@@ -1486,55 +2148,61 @@ class current_state {
 		F.set_carry(false);
 	}
 
-	void acc_cpl() {
-		A.complement();
+	reg8_pair acc_cpl(reg8_pair acc) {
+		acc.complement();
+		return acc;
 	}
-	void acc_neg() {
-		F.set_carry(A.is_nonzero());
-		A = -A;
-		F.set_zero(A.is_zero());
-		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_equal(0x80));
-		if (A.isknown_zero()) {
-			A.set_unknown();
+	reg8_pair acc_neg(reg8_pair acc) {
+		F.set_carry(acc.is_nonzero());
+		acc = -acc;
+		F.set_zero(acc.is_zero());
+		F.set_sign(acc.test_signbit());
+		F.set_overflow(acc.is_equal(0x80));
+		if (acc.isknown_zero()) {
+			acc.set_unknown();
 		}
+		return acc;
 	}
-	void acc_rla() {
-		flag_state new_carry = A.test_signbit();
+	reg8_pair acc_rla(reg8_pair acc) {
+		flag_state new_carry = acc.test_signbit();
 		flag_state old_carry = F.get_carry();
-		A.bits <<= 1;
-		A.mask <<= 1;
-		A.bit_copy(0, old_carry);
+		acc.bits <<= 1;
+		acc.mask <<= 1;
+		acc.bit_copy(0, old_carry);
 		F.set_carry(new_carry);
+		return acc;
 	}
-	void acc_rlca() {
-		flag_state new_carry = A.test_signbit();
-		A.bits <<= 1;
-		A.mask <<= 1;
-		A.bit_copy(0, new_carry);
+	reg8_pair acc_rlca(reg8_pair acc) {
+		flag_state new_carry = acc.test_signbit();
+		acc.bits <<= 1;
+		acc.mask <<= 1;
+		acc.bit_copy(0, new_carry);
 		F.set_carry(new_carry);
+		return acc;
 	}
-	void acc_rra() {
-		flag_state new_carry = A.bit_test(0);
+	reg8_pair acc_rra(reg8_pair acc) {
+		flag_state new_carry = acc.bit_test(0);
 		flag_state old_carry = F.get_carry();
-		A.bits >>= 1;
-		A.mask >>= 1;
-		A.bit_copy(7, old_carry);
+		acc.bits >>= 1;
+		acc.mask >>= 1;
+		acc.bit_copy(7, old_carry);
 		F.set_carry(new_carry);
+		return acc;
 	}
-	void acc_rrca() {
-		flag_state new_carry = A.bit_test(0);
-		A.bits >>= 1;
-		A.mask >>= 1;
-		A.bit_copy(7, new_carry);
+	reg8_pair acc_rrca(reg8_pair acc) {
+		flag_state new_carry = acc.bit_test(0);
+		acc.bits >>= 1;
+		acc.mask >>= 1;
+		acc.bit_copy(7, new_carry);
 		F.set_carry(new_carry);
+		return acc;
 	}
 	void reg8_shift_set_flags(reg8_pair src) {
 		F.set_zero(src.is_zero());
 		F.set_sign(src.test_signbit());
 		F.set_overflow(src.is_parity_even());
 	}
-	void reg8_shift_to_zero(reg8_pair& arg) {
+	void reg8_shift_to_zero(reg8_pair& acc, reg8_pair& arg) {
 		arg.set_value(0);
 		F.set_sign(false);
 		F.set_overflow(true);
@@ -1600,58 +2268,61 @@ class current_state {
 		F.set_sign(dst.test_signbit());
 		F.set_overflow(dst.is_parity_even());
 	}
-	void add_a_a() {
+	reg8_pair add_a_a(reg8_pair acc) {
 		using enum flag_state;
-		flag_state old_sign = A.test_signbit();
-		flag_state new_carry = A.test_signbit();
+		flag_state old_sign = acc.test_signbit();
+		flag_state new_carry = acc.test_signbit();
 		F.set_carry(old_sign);
-		A.shift_left_logical(1);
-		A.bit_clear(0);
-		flag_state new_sign = A.test_signbit();
+		acc.shift_left_logical(1);
+		acc.bit_clear(0);
+		flag_state new_sign = acc.test_signbit();
 		F.set_carry(new_carry);
-		F.set_zero(A.is_zero());
+		F.set_zero(acc.is_zero());
 		F.set_sign(new_sign);
 		if (old_sign == unknown || new_sign == unknown) {
 			F.set_overflow_unknown();
-			return;
+			return acc;
 		}
 		F.set_overflow(old_sign != new_sign);
+		return acc;
 	}
-	void adc_a_a() {
+	reg8_pair adc_a_a(reg8_pair acc) {
 		using enum flag_state;
 		flag_state old_carry = F.get_carry();
-		flag_state old_sign = A.test_signbit();
-		flag_state new_carry = A.test_signbit();
+		flag_state old_sign = acc.test_signbit();
+		flag_state new_carry = acc.test_signbit();
 		F.set_carry(old_sign);
-		A.shift_left_logical(1);
-		A.bit_copy(0, old_carry);
-		flag_state new_sign = A.test_signbit();
+		acc.shift_left_logical(1);
+		acc.bit_copy(0, old_carry);
+		flag_state new_sign = acc.test_signbit();
 		F.set_carry(new_carry);
-		F.set_zero(A.is_zero());
+		F.set_zero(acc.is_zero());
 		F.set_sign(new_sign);
 		if (old_sign == unknown || new_sign == unknown) {
 			F.set_overflow_unknown();
-			return;
+			return acc;
 		}
 		F.set_overflow(old_sign != new_sign);
+		return acc;
 	}
-	void sbc_a_a() {
+	reg8_pair sbc_a_a(reg8_pair acc) {
 		F.set_overflow(false);
 		if (F.isknown_carry_set()) {
-			A.set_value(0xFF);
+			set_A(0xFF);
 			F.set_zero(false);
 			F.set_sign(true);
-			return;
+			return acc;
 		}
 		if (F.isknown_carry_clear()) {
-			A.set_value(0x00);
+			set_A(0x00);
 			F.set_zero(true);
 			F.set_sign(false);
-			return;
+			return acc;
 		}
 		F.set_zero_unknown();
 		F.set_sign_unknown();
-		A.set_unknown();
+		acc.set_unknown();
+		return acc;
 	}
 	reg24_pair sbc24_hl_hl(reg24_pair dst) {
 		F.set_overflow(false);
@@ -1691,13 +2362,13 @@ class current_state {
 		dst.set_unknown();
 		return dst;
 	}
-	void sub_a_a() {
-		A.set_value(0x00);
+	reg8_pair sub_a_a(reg8_pair acc) {
 		F.set_carry(false);
 		F.set_zero(true);
 		F.set_sign(false);
 		F.set_overflow(false);
-		return;
+		acc.set_value(0);
+		return acc;
 	}
 	void cp_a_a() {
 		F.set_carry(false);
@@ -1706,31 +2377,31 @@ class current_state {
 		F.set_overflow(false);
 		return;
 	}
-	void xor_a_a() {
-		A.set_value(0x00);
+	reg8_pair xor_a_a(reg8_pair acc) {
+		acc.set_value(0);
 		F.set_carry(false);
 		F.set_zero(true);
 		F.set_sign(false);
 		F.set_overflow(true);
-		return;
+		return acc;
 	}
-	void and_a_a() {
+	void and_a_a(reg8_pair acc) {
 		F.set_carry(false);
-		F.set_zero(A.is_zero());
-		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_zero(acc.is_zero());
+		F.set_sign(acc.test_signbit());
+		F.set_overflow(acc.is_parity_even());
 	}
-	void or_a_a() {
+	void or_a_a(reg8_pair acc) {
 		F.set_carry(false);
-		F.set_zero(A.is_zero());
-		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_zero(acc.is_zero());
+		F.set_sign(acc.test_signbit());
+		F.set_overflow(acc.is_parity_even());
 	}
-	void tst_a_a() {
+	void tst_a_a(reg8_pair acc) {
 		F.set_carry(false);
-		F.set_zero(A.is_zero());
-		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_zero(acc.is_zero());
+		F.set_sign(acc.test_signbit());
+		F.set_overflow(acc.is_parity_even());
 	}
 	reg24_pair add24_hl_hl(reg24_pair dst) {
 		F.set_carry(dst.test_signbit());
@@ -1836,113 +2507,6 @@ class current_state {
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 	}
-/* getters */
-
-	reg24_pair get_AF() const {
-		reg8_pair upper;
-		reg8_pair flags;
-		reg24_pair ret;
-		upper.set_unknown();
-		F.export_flag_pair(flags);
-		ret.set_value(upper, A, flags);
-		return ret;
-	}
-	reg24_pair get_HL() const {
-		reg24_pair ret;
-		ret.set_value(UHL, H, L);
-		return ret;
-	}
-	reg24_pair get_DE() const {
-		reg24_pair ret;
-		ret.set_value(UDE, D, E);
-		return ret;
-	}
-	reg24_pair get_BC() const {
-		reg24_pair ret;
-		ret.set_value(UBC, B, C);
-		return ret;
-	}
-	reg24_pair get_IX() const {
-		reg24_pair ret;
-		ret.set_value(UIX, IXH, IXL);
-		return ret;
-	}
-	reg24_pair get_IY() const {
-		reg24_pair ret;
-		ret.set_value(UIY, IYH, IYL);
-		return ret;
-	}
-	reg24_pair get_SP() const {
-		/* SP is unimplemented currently */
-		reg24_pair ret;
-		ret.set_unknown();
-		return ret;
-	}
-
-/* CRT getters */
-	private:
-	reg16_pair get16_HL() const {
-		reg16_pair ret;
-		ret.set_value(H, L);
-		return ret;
-	}
-	reg16_pair get16_DE() const {
-		reg16_pair ret;
-		ret.set_value(D, E);
-		return ret;
-	}
-	reg16_pair get16_BC() const {
-		reg16_pair ret;
-		ret.set_value(B, C);
-		return ret;
-	}
-	reg16_pair get16_IX() const {
-		reg16_pair ret;
-		ret.set_value(IXH, IXL);
-		return ret;
-	}
-	reg16_pair get16_IY() const {
-		reg16_pair ret;
-		ret.set_value(IYH, IYL);
-		return ret;
-	}
-	reg16_pair get16_SP() const {
-		/* SP is unimplemented currently */
-		reg16_pair ret;
-		ret.set_unknown();
-		return ret;
-	}
-
-	public:
-	reg32_pair get32_EUHL() const {
-		reg32_pair ret;
-		ret.set_value(E, UHL, H, L);
-		return ret;
-	}
-
-	reg32_pair get32_AUBC() const {
-		reg32_pair ret;
-		ret.set_value(A, UBC, B, C);
-		return ret;
-	}
-
-	reg48_pair get48_UDEUHL() const {
-		reg48_pair ret;
-		ret.set_value(get_DE(), get_HL());
-		return ret;
-	}
-
-	reg48_pair get48_UIYUBC() const {
-		reg48_pair ret;
-		ret.set_value(get_IY(), get_BC());
-		return ret;
-	}
-
-	reg64_pair get64_BCUDEUHL() const {
-		reg64_pair ret;
-		ret.set_value(get16_BC(), get_DE(), get_HL());
-		return ret;
-	}
 
 /* retrive from stack */
 
@@ -1991,68 +2555,13 @@ class current_state {
 
 /* setters */
 
-	void set_AF(reg24_pair val) {
-		reg8_pair flags;
-		val.split_value(A, flags);
-		F.import_flag_pair(flags);
-	}
 
-	void set_HL(reg24_pair val) {
-		val.split_value(UHL, H, L);
-		update_PHL();
-	}
-	void set_DE(reg24_pair val) {
-		val.split_value(UDE, D, E);
-		update_PDE();
-	}
-	void set_BC(reg24_pair val) {
-		val.split_value(UBC, B, C);
-		update_PBC();
-	}
-	void set_IX(reg24_pair val) {
-		val.split_value(UIX, IXH, IXL);
-		update_PIX();
-	}
-	void set_IY(reg24_pair val) {
-		val.split_value(UIY, IYH, IYL);
-		update_PIY();
-	}
 	void set_SP(__attribute__((unused)) reg24_pair val) {
 		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
 
-	void set_HL(uint24_t val) {
-		reg24_pair dst;
-		dst.set_value(val);
-		set_HL(dst);
-		update_PHL();
-	}
-	void set_DE(uint24_t val) {
-		reg24_pair dst;
-		dst.set_value(val);
-		set_DE(dst);
-		update_PDE();
-	}
-	void set_BC(uint24_t val) {
-		reg24_pair dst;
-		dst.set_value(val);
-		set_BC(dst);
-		update_PBC();
-	}
-	void set_IX(uint24_t val) {
-		reg24_pair dst;
-		dst.set_value(val);
-		set_IX(dst);
-		update_PIX();
-	}
-	void set_IY(uint24_t val) {
-		reg24_pair dst;
-		dst.set_value(val);
-		set_IY(dst);
-		update_PIY();
-	}
 	void set_SP(uint24_t val) {
 		reg24_pair dst;
 		dst.set_value(val);
@@ -2061,84 +2570,19 @@ class current_state {
 	}
 
 /* CRT setters */
-	private:
-	void set16_zero_HL(reg16_pair val) {
-		val.split_value(UHL, H, L);
-		update_PHL();
-	}
-	void set16_zero_DE(reg16_pair val) {
-		val.split_value(UDE, D, E);
-		update_PDE();
-	}
-	void set16_zero_BC(reg16_pair val) {
-		val.split_value(UBC, B, C);
-		update_PBC();
-	}
-	void set16_zero_IX(reg16_pair val) {
-		val.split_value(UIX, IXH, IXL);
-		update_PIX();
-	}
-	void set16_zero_IY(reg16_pair val) {
-		val.split_value(UIY, IYH, IYL);
-		update_PIY();
-	}
+
 	void set16_zero_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
 
-	void set16_partial_HL(reg16_pair val) {
-		val.split_value(H, L);
-		UHL.set_unknown();
-		update_PHL();
-	}
-	void set16_partial_DE(reg16_pair val) {
-		val.split_value(D, E);
-		UDE.set_unknown();
-		update_PDE();
-	}
-	void set16_partial_BC(reg16_pair val) {
-		val.split_value(B, C);
-		UBC.set_unknown();
-		update_PBC();
-	}
-	void set16_partial_IX(reg16_pair val) {
-		val.split_value(IXH, IXL);
-		UIX.set_unknown();
-		update_PIX();
-	}
-	void set16_partial_IY(reg16_pair val) {
-		val.split_value(IYH, IYL);
-		UIY.set_unknown();
-		update_PIY();
-	}
 	void set16_partial_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
 		/* SP is unimplemented currently */
 		return;
 	}
 
-	void set16_preserve_HL(reg16_pair val) {
-		val.split_value(H, L);
-		update_PHL();
-	}
-	void set16_preserve_DE(reg16_pair val) {
-		val.split_value(D, E);
-		update_PDE();
-	}
-	void set16_preserve_BC(reg16_pair val) {
-		val.split_value(B, C);
-		update_PBC();
-	}
-	void set16_preserve_IX(reg16_pair val) {
-		val.split_value(IXH, IXL);
-		update_PIX();
-	}
-	void set16_preserve_IY(reg16_pair val) {
-		val.split_value(IYH, IYL);
-		update_PIY();
-	}
 	void set16_preserve_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
 		/* SP is unimplemented currently */
@@ -2146,106 +2590,6 @@ class current_state {
 	}
 	public:
 
-	void set32_EUHL(reg32_pair val) {
-		E.set_value(val.get_hi8());
-		set_HL(val.get_lo24());
-		update_PHL();
-		update_PDE();
-	}
-
-	void set32_AUBC(reg32_pair val) {
-		A.set_value(val.get_hi8());
-		set_BC(val.get_lo24());
-		update_PBC();
-	}
-
-	void set48_UDEUHL(reg48_pair val) {
-		set_DE(val.get_hi24());
-		set_HL(val.get_lo24());
-		update_PHL();
-		update_PDE();
-	}
-
-	void set48_UIYUBC(reg48_pair val) {
-		set_IY(val.get_hi24());
-		set_BC(val.get_lo24());
-		update_PIY();
-		update_PBC();
-	}
-
-	void set64_zero_BCUDEUHL(reg64_pair val) {
-		set_HL(val.get_lo24());
-		set_DE(val.get_hi24());
-		set16_zero_BC(val.get_upper16());
-		update_PHL();
-		update_PDE();
-		update_PBC();
-	}
-
-	void set64_preserve_BCUDEUHL(reg64_pair val) {
-		set_HL(val.get_lo24());
-		set_DE(val.get_hi24());
-		set16_preserve_BC(val.get_upper16());
-		update_PHL();
-		update_PDE();
-		update_PBC();
-	}
-
-	void set64_partial_BCUDEUHL(reg64_pair val) {
-		set_HL(val.get_lo24());
-		set_DE(val.get_hi24());
-		set16_partial_BC(val.get_upper16());
-		update_PHL();
-		update_PDE();
-		update_PBC();
-	}
-
-	void set64_STACK(reg64_pair val, size_t offset = 0) {
-		reg16_pair up;
-		reg24_pair hi, lo;
-		val.split_value(up, hi, lo);
-		stack.write_base(lo.get_lo()   , offset + 0);
-		stack.write_base(lo.get_hi()   , offset + 1);
-		stack.write_base(lo.get_upper(), offset + 2);
-		stack.write_base(hi.get_lo()   , offset + 3);
-		stack.write_base(hi.get_hi()   , offset + 4);
-		stack.write_base(hi.get_upper(), offset + 5);
-		stack.write_base(up.get_lo()   , offset + 6);
-		stack.write_base(up.get_hi()   , offset + 7);
-	}
-
-/* set unknown */
-	void HL_set_unknown() {
-		UHL.set_unknown();
-		H.set_unknown();
-		L.set_unknown();
-		update_PHL();
-	}
-	void DE_set_unknown() {
-		UDE.set_unknown();
-		D.set_unknown();
-		E.set_unknown();
-		update_PDE();
-	}
-	void BC_set_unknown() {
-		UBC.set_unknown();
-		B.set_unknown();
-		C.set_unknown();
-		update_PBC();
-	}
-	void IX_set_unknown() {
-		UIX.set_unknown();
-		IXH.set_unknown();
-		IXL.set_unknown();
-		stack.invalidate_IX();
-		update_PIX();
-	}
-	void IY_set_unknown() {
-		UIY.set_unknown();
-		IYH.set_unknown();
-		IYL.set_unknown();
-		update_PIY();
-	}
 	void SP_set_unknown() {
 		set_pointers_invalid();
 		/* SP is unimplemented currently */
@@ -2311,12 +2655,12 @@ class current_state {
 			"S3 " + print_reg24(stack.read_base(5), stack.read_base(4), stack.read_base(3)) +
 		#endif
 			" | S0 " + print_reg24(stack.read_base(2), stack.read_base(1), stack.read_base(0)) +
-			" | IX " + print_reg24(UIX, IXH, IXL) +
-			" | IY " + print_reg24(UIY, IYH, IYL) +
-			" | A " + print_reg8(A) +
-			" | BC " + print_reg24(UBC, B, C) + 
-			" | DE " + print_reg24(UDE, D, E) +
-			" | HL " + print_reg24(UHL, H, L) + 
+			" | IX " + print_reg24(get_UIX(), get_IXH(), get_IXL()) +
+			" | IY " + print_reg24(get_UIY(), get_IYH(), get_IYL()) +
+			" | A " + print_reg8(get_A()) +
+			" | BC " + print_reg24(get_UBC(), get_B(), get_C()) + 
+			" | DE " + print_reg24(get_UDE(), get_D(), get_E()) +
+			" | HL " + print_reg24(get_UHL(), get_H(), get_L()) + 
 			" | " +
 			print_flag(F.get_sign(), "S") + 
 			print_flag(F.get_zero(), "Z") +

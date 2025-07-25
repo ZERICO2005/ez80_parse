@@ -175,11 +175,11 @@ void optimize_ishl(
 	list<ez80_code>::iterator& it,
 	current_state state
 ) {
-	if (!state.C.isknown_fully()) {
+	if (!state.get_C().isknown_fully()) {
 		/* nothing we can do */
 		return;
 	}
-	const uint8_t shift = state.C.bits;
+	const uint8_t shift = state.get_C().bits;
 	if (shift > 6) {
 		/* too large to inline */
 		return;
@@ -274,7 +274,7 @@ void optimize_imulu(
 	}
 
 	it = prog.erase(it);
-	if (state.UBC.isknown_zero() && state.UHL.isknown_zero()) {
+	if (state.get_UBC().isknown_zero() && state.get_UHL().isknown_zero()) {
 		insert_op_code(prog, it,
 			{LD_B_H, LD_C_L}
 		);
