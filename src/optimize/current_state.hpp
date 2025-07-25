@@ -510,17 +510,17 @@ public:
 		}
 	}
 
-	void set_offset(int value) {
+	void set_value(int value) {
 		using enum reg_pointer_type;
 		type = VALUE;
 		offset = value;
 	}
-	void set_offset(reg24_pair value) {
+	void set_value(reg24_pair value) {
 		if (!value.isknown_fully()) {
 			set_invalid();
 			return;
 		}
-		set_offset(static_cast<int>(static_cast<int24_t>(value.bits)));
+		set_value(static_cast<int>(static_cast<int24_t>(value.bits)));
 	}
 	void add_sp() {
 		using enum reg_pointer_type;
@@ -871,6 +871,64 @@ class current_state {
 	reg_pointer PIX;
 	reg_pointer PIY;
 
+	struct full_reg {
+		reg_pointer ptr;
+		reg24_pair value;
+	};
+
+	full_reg HL;
+	full_reg DE;
+	full_reg BC;
+	full_reg IX;
+	full_reg IY;
+
+	full_reg get_full_HL() {
+		full_reg ret;
+		ret.ptr = PHL;
+		ret.value = get_HL();
+		return ret;
+	}
+	full_reg get_full_DE() {
+		full_reg ret;
+		ret.ptr = PDE;
+		ret.value = get_DE();
+		return ret;
+	}
+	full_reg get_full_BC() {
+		full_reg ret;
+		ret.ptr = PBC;
+		ret.value = get_BC();
+		return ret;
+	}
+	full_reg get_full_IX() {
+		full_reg ret;
+		ret.ptr = PIX;
+		ret.value = get_IX();
+		return ret;
+	}
+	full_reg get_full_IY() {
+		full_reg ret;
+		ret.ptr = PIY;
+		ret.value = get_IY();
+		return ret;
+	}
+
+	void update_PHL() {
+		PHL.set_value(get_HL());
+	}
+	void update_PDE() {
+		PDE.set_value(get_DE());
+	}
+	void update_PBC() {
+		PBC.set_value(get_BC());
+	}
+	void update_PIX() {
+		PIX.set_value(get_IX());
+	}
+	void update_PIY() {
+		PIY.set_value(get_IY());
+	}
+
 	void set_pointers_invalid() {
 		PHL.set_invalid();
 		PDE.set_invalid();
@@ -995,8 +1053,6 @@ class current_state {
 			STACK[i].set_unknown();
 		}
 	}
-
-
 
 	void set_previous_instructions_invalid() {
 		using enum ez80_op_code;
@@ -1943,18 +1999,23 @@ class current_state {
 
 	void set_HL(reg24_pair val) {
 		val.split_value(UHL, H, L);
+		update_PHL();
 	}
 	void set_DE(reg24_pair val) {
 		val.split_value(UDE, D, E);
+		update_PDE();
 	}
 	void set_BC(reg24_pair val) {
 		val.split_value(UBC, B, C);
+		update_PBC();
 	}
 	void set_IX(reg24_pair val) {
 		val.split_value(UIX, IXH, IXL);
+		update_PIX();
 	}
 	void set_IY(reg24_pair val) {
 		val.split_value(UIY, IYH, IYL);
+		update_PIY();
 	}
 	void set_SP(__attribute__((unused)) reg24_pair val) {
 		set_pointers_invalid();
@@ -1966,50 +2027,60 @@ class current_state {
 		reg24_pair dst;
 		dst.set_value(val);
 		set_HL(dst);
+		update_PHL();
 	}
 	void set_DE(uint24_t val) {
 		reg24_pair dst;
 		dst.set_value(val);
 		set_DE(dst);
+		update_PDE();
 	}
 	void set_BC(uint24_t val) {
 		reg24_pair dst;
 		dst.set_value(val);
 		set_BC(dst);
+		update_PBC();
 	}
 	void set_IX(uint24_t val) {
 		reg24_pair dst;
 		dst.set_value(val);
 		set_IX(dst);
+		update_PIX();
 	}
 	void set_IY(uint24_t val) {
 		reg24_pair dst;
 		dst.set_value(val);
 		set_IY(dst);
+		update_PIY();
 	}
 	void set_SP(uint24_t val) {
-		set_pointers_invalid();
 		reg24_pair dst;
 		dst.set_value(val);
 		set_SP(dst);
+		set_pointers_invalid();
 	}
 
 /* CRT setters */
 	private:
 	void set16_zero_HL(reg16_pair val) {
 		val.split_value(UHL, H, L);
+		update_PHL();
 	}
 	void set16_zero_DE(reg16_pair val) {
 		val.split_value(UDE, D, E);
+		update_PDE();
 	}
 	void set16_zero_BC(reg16_pair val) {
 		val.split_value(UBC, B, C);
+		update_PBC();
 	}
 	void set16_zero_IX(reg16_pair val) {
 		val.split_value(UIX, IXH, IXL);
+		update_PIX();
 	}
 	void set16_zero_IY(reg16_pair val) {
 		val.split_value(UIY, IYH, IYL);
+		update_PIY();
 	}
 	void set16_zero_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
@@ -2020,22 +2091,27 @@ class current_state {
 	void set16_partial_HL(reg16_pair val) {
 		val.split_value(H, L);
 		UHL.set_unknown();
+		update_PHL();
 	}
 	void set16_partial_DE(reg16_pair val) {
 		val.split_value(D, E);
 		UDE.set_unknown();
+		update_PDE();
 	}
 	void set16_partial_BC(reg16_pair val) {
 		val.split_value(B, C);
 		UBC.set_unknown();
+		update_PBC();
 	}
 	void set16_partial_IX(reg16_pair val) {
 		val.split_value(IXH, IXL);
 		UIX.set_unknown();
+		update_PIX();
 	}
 	void set16_partial_IY(reg16_pair val) {
 		val.split_value(IYH, IYL);
 		UIY.set_unknown();
+		update_PIY();
 	}
 	void set16_partial_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
@@ -2045,18 +2121,23 @@ class current_state {
 
 	void set16_preserve_HL(reg16_pair val) {
 		val.split_value(H, L);
+		update_PHL();
 	}
 	void set16_preserve_DE(reg16_pair val) {
 		val.split_value(D, E);
+		update_PDE();
 	}
 	void set16_preserve_BC(reg16_pair val) {
 		val.split_value(B, C);
+		update_PBC();
 	}
 	void set16_preserve_IX(reg16_pair val) {
 		val.split_value(IXH, IXL);
+		update_PIX();
 	}
 	void set16_preserve_IY(reg16_pair val) {
 		val.split_value(IYH, IYL);
+		update_PIY();
 	}
 	void set16_preserve_SP(__attribute__((unused)) reg16_pair val) {
 		set_pointers_invalid();
@@ -2068,39 +2149,55 @@ class current_state {
 	void set32_EUHL(reg32_pair val) {
 		E.set_value(val.get_hi8());
 		set_HL(val.get_lo24());
+		update_PHL();
+		update_PDE();
 	}
 
 	void set32_AUBC(reg32_pair val) {
 		A.set_value(val.get_hi8());
 		set_BC(val.get_lo24());
+		update_PBC();
 	}
 
 	void set48_UDEUHL(reg48_pair val) {
 		set_DE(val.get_hi24());
 		set_HL(val.get_lo24());
+		update_PHL();
+		update_PDE();
 	}
 
 	void set48_UIYUBC(reg48_pair val) {
 		set_IY(val.get_hi24());
 		set_BC(val.get_lo24());
+		update_PIY();
+		update_PBC();
 	}
 
 	void set64_zero_BCUDEUHL(reg64_pair val) {
-		set_DE(val.get_hi24());
 		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
 		set16_zero_BC(val.get_upper16());
+		update_PHL();
+		update_PDE();
+		update_PBC();
 	}
 
 	void set64_preserve_BCUDEUHL(reg64_pair val) {
-		set_DE(val.get_hi24());
 		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
 		set16_preserve_BC(val.get_upper16());
+		update_PHL();
+		update_PDE();
+		update_PBC();
 	}
 
 	void set64_partial_BCUDEUHL(reg64_pair val) {
-		set_DE(val.get_hi24());
 		set_HL(val.get_lo24());
+		set_DE(val.get_hi24());
 		set16_partial_BC(val.get_upper16());
+		update_PHL();
+		update_PDE();
+		update_PBC();
 	}
 
 	void set64_STACK(reg64_pair val, size_t offset = 0) {
@@ -2122,27 +2219,32 @@ class current_state {
 		UHL.set_unknown();
 		H.set_unknown();
 		L.set_unknown();
+		update_PHL();
 	}
 	void DE_set_unknown() {
 		UDE.set_unknown();
 		D.set_unknown();
 		E.set_unknown();
+		update_PDE();
 	}
 	void BC_set_unknown() {
 		UBC.set_unknown();
 		B.set_unknown();
 		C.set_unknown();
+		update_PBC();
 	}
 	void IX_set_unknown() {
 		UIX.set_unknown();
 		IXH.set_unknown();
 		IXL.set_unknown();
 		stack.invalidate_IX();
+		update_PIX();
 	}
 	void IY_set_unknown() {
 		UIY.set_unknown();
 		IYH.set_unknown();
 		IYL.set_unknown();
+		update_PIY();
 	}
 	void SP_set_unknown() {
 		set_pointers_invalid();
