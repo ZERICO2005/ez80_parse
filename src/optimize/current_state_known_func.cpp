@@ -399,196 +399,145 @@ void current_state::next_known_func(ez80_known_function func) {
 		/* 48 bit */
 	
 		case __i48cmpzero: {
-
+			crt_cmpzero(F, get48_UDEUHL());
 		} break;
 		case __i48cmpu: {
-
+			crt_cmpu(F, get48_UDEUHL(), get48_UIYUBC());
 		} break;
 		case __i48cmps: {
-
+			crt_cmps(F, get48_UDEUHL(), get48_UIYUBC());
 		} break;
 		case __i48not: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_not(get48_UDEUHL()));
 		} break;
 		case __i48neg: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_neg(get48_UDEUHL()));
 		} break;
 		case __i48and: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_and(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48or: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_or(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48xor: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_xor(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48shl: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_shl(get48_UDEUHL(), C));
 		} break;
 		case __i48shru: {
-			DE_set_unknown();
-			HL_set_unknown();
+			set48_UDEUHL(crt_shru(get48_UDEUHL(), C));
 		} break;
 		case __i48shrs: {
-			DE_set_unknown();
-			HL_set_unknown();
+			set48_UDEUHL(crt_shrs(get48_UDEUHL(), C));
 		} break;
 		case __i48add: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_add(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48sub: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_sub(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48mulu: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_mul(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48divu: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_divu(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48divs: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_divs(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48remu: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_remu(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48rems: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_rems(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48ctlz: {
-			A.set_unknown();
+			crt_ctlz(A, get48_UDEUHL());
 		} break;
 		case __i48cttz: {
-			A.set_unknown();
+			crt_ctlz(A, get48_UDEUHL());
 		} break;
 		case __i48popcnt: {
-			A.set_unknown();
+			crt_popcnt(A, get48_UDEUHL());
 		} break;
 		case __i48bswap: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_bswap(get48_UDEUHL()));
 		} break;
 		case __i48bitrev: {
-			HL_set_unknown();
-			DE_set_unknown();
+			set48_UDEUHL(crt_bitrev(get48_UDEUHL()));
 		} break;
 
 		/* 64 bit */
 
 		case __llcmpzero: {
-
+			crt_cmpzero(F, get64_BCUDEUHL());
 		} break;
 		case __llcmpu: {
-
+			crt_cmpu(F, get64_BCUDEUHL(), get64_STACK());
 		} break;
 		case __llcmps: {
-
+			crt_cmps(F, get64_BCUDEUHL(), get64_STACK());
 		} break;
 		case __llnot: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_not(get64_BCUDEUHL()));
 		} break;
 		case __llneg: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_neg(get64_BCUDEUHL()));
 		} break;
 		case __lland: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_and(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llor: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_or(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llxor: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_xor(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llshl: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_shl(get64_BCUDEUHL(), get8_STACK(0)));
 		} break;
 		case __llshru: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_shru(get64_BCUDEUHL(), get8_STACK(0)));
 		} break;
 		case __llshrs: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_shrs(get64_BCUDEUHL(), get8_STACK(0)));
 		} break;
 		case __lladd: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_add(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llsub: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_sub(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llmulu: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_mul(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __lldivu: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_divu(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __lldivs: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_divs(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llremu: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_remu(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llrems: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_rems(get64_BCUDEUHL(), get64_STACK()));
 		} break;
 		case __llctlz: {
-			A.set_unknown();
+			crt_ctlz(A, get64_BCUDEUHL());
 		} break;
 		case __llcttz: {
-			A.set_unknown();
+			crt_ctlz(A, get64_BCUDEUHL());
 		} break;
 		case __llpopcnt: {
-			A.set_unknown();
+			crt_popcnt(A, get64_BCUDEUHL());
 		} break;
 		case __llbswap: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_bswap(get64_BCUDEUHL()));
 		} break;
 		case __llbitrev: {
-			BC_set_unknown();
-			DE_set_unknown();
-			HL_set_unknown();
+			set64_partial_BCUDEUHL(crt_bitrev(get64_BCUDEUHL()));
 		} break;
 	
 		/* float/double */
@@ -628,8 +577,8 @@ void current_state::next_known_func(ez80_known_function func) {
 			HL_set_unknown();
 		} break;
 		case __ftol: {
-			E.set_unknown();
-			HL_set_unknown();
+			A.set_unknown();
+			BC_set_unknown();
 		} break;
 		case __ftoll: {
 			BC_set_unknown();
@@ -637,8 +586,8 @@ void current_state::next_known_func(ez80_known_function func) {
 			HL_set_unknown();
 		} break;
 		case __ftoul: {
-			E.set_unknown();
-			HL_set_unknown();
+			A.set_unknown();
+			BC_set_unknown();
 		} break;
 		case __ftoull: {
 			BC_set_unknown();
@@ -646,8 +595,8 @@ void current_state::next_known_func(ez80_known_function func) {
 			HL_set_unknown();
 		} break;
 		case __ltof: {
-			E.set_unknown();
-			HL_set_unknown();
+			A.set_unknown();
+			BC_set_unknown();
 		} break;
 		case __lltof: {
 			BC_set_unknown();
@@ -655,8 +604,8 @@ void current_state::next_known_func(ez80_known_function func) {
 			HL_set_unknown();
 		} break;
 		case __ultof: {
-			E.set_unknown();
-			HL_set_unknown();
+			A.set_unknown();
+			BC_set_unknown();
 		} break;
 		case __ulltof: {
 			BC_set_unknown();
@@ -667,59 +616,92 @@ void current_state::next_known_func(ez80_known_function func) {
 		/* long double */
 
 		case __dcmp: {
-			
+			set_stack_base_unknown(9);
 		} break;
 		case __dcmpo: {
-			
+			set_stack_base_unknown(9);
 		} break;
 		case __dcmpu: {
-			
+			set_stack_base_unknown(9);
 		} break;
 		case __dneg: {
 			B.bit_unknown(7);
 			UBC.set_unknown();
 		} break;
 		case __dadd: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
+			set_stack_base_unknown(9);
 		} break;
 		case __dsub: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
+			set_stack_base_unknown(9);
 		} break;
 		case __dmul: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
+			set_stack_base_unknown(9);
 		} break;
 		case __ddiv: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
+			set_stack_base_unknown(9);
 		} break;
 		case __drem: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
+			set_stack_base_unknown(9);
 		} break;
 		case __dtol: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __dtoll: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __dtoul: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __dtoull: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __dtof: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __ltod: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __lltod: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __ultod: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		case __ulltod: {
-			set_all_reg_unknown();
+			BC_set_unknown();
+			DE_set_unknown();
+			HL_set_unknown();
 		} break;
 		
 		/* CRT routines */
@@ -743,208 +725,242 @@ void current_state::next_known_func(ez80_known_function func) {
 		/* <string.h> */
 
 		case _memcpy: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set_HL(ret);
 		} break;
 		case _memmove: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set_HL(ret);
 		} break;
 		case _memset: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set_HL(ret);
 		} break;
 		case _bzero: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _memcmp: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _memchr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _memrchr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _memmem: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(12);
 		} break;
 		case _memccpy: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(12);
 		} break;
 		case _mempcpy: {
-			set_all_reg_unknown();
+			reg24_pair ptr = get24_STACK(0);
+			reg24_pair len = get24_STACK(3);
+			set_just_libc_reg_unknown(9);
+			set_HL(ptr + len);
 		} break;
 		case _strcpy: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(6);
+			set_HL(ret);
 		} break;
 		case _strncpy: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set_HL(ret);
 		} break;
 		case _stpcpy: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _stpncpy: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _strlcpy: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _strcat: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(6);
+			set_HL(ret);
 		} break;
 		case _strncat: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set_HL(ret);
 		} break;
 		case _strlcat: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _strchr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strrchr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strpbrk: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strstr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strcasestr: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strtok: {
-			set_all_reg_unknown();
+			set_just_cxx_reg_unknown();
 		} break;
 		case _strdup: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _strndup: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strcspn: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strspn: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strlen: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _strnlen: {
-			set_all_reg_unknown();
+			reg24_pair max_len = get24_STACK(6);
+			set_just_libc_reg_unknown(6);
+			max_len.set_to_unsigned_range(0, max_len.get_unknown_bits_as_ones());
+			set_HL(max_len);
 		} break;
 		case _strcmp: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strncmp: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(9);
 		} break;
 		case _strcasecmp: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 		case _strncasecmp: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(6);
 		} break;
 	
 		/* <ctype.h> */
 
 		case _isalnum: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isalpha: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isblank: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _iscntrl: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isdigit: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isgraph: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _islower: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isprint: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _ispunct: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isspace: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isupper: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _tolower: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _toupper: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _isascii: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 		case _sxdigit: {
-			set_all_reg_unknown();
+			set_just_libc_reg_unknown(3);
 		} break;
 	
 		/* <math.h> */
 
-		case _copysign: {
-			set_all_reg_unknown();
-		} break;
+		case _copysign:
 		case _copysignf: {
-			set_all_reg_unknown();
+			reg32_pair ret = get32_STACK(0);
+			flag_state sign = get32_STACK(6).test_signbit();
+			set_just_libc_reg_unknown(12);
+			ret.bit_copy(31, sign);
+			set32_EUHL(ret);
 		} break;
 		case _copysignl: {
-			set_all_reg_unknown();
+			reg64_pair ret = get64_STACK(0);
+			flag_state sign = get64_STACK(9).test_signbit();
+			set_just_libc_reg_unknown(18);
+			ret.bit_copy(63, sign);
+			set64_partial_BCUDEUHL(ret);
 		} break;
-		case _fabs: {
-			set_all_reg_unknown();
-		} break;
+		case _fabs:
 		case _fabsf: {
-			set_all_reg_unknown();
+			reg32_pair ret = get32_STACK(0);
+			set_just_libc_reg_unknown(6);
+			ret.bit_clear(31);
+			set32_EUHL(ret);
 		} break;
 		case _fabsl: {
-			set_all_reg_unknown();
+			reg64_pair ret = get64_STACK(0);
+			set_just_libc_reg_unknown(9);
+			ret.bit_clear(63);
+			set64_partial_BCUDEUHL(ret);
 		} break;
-	
+
 		/* <stdlib.h> */
 
 		case _abs: {
-			set_all_reg_unknown();
+			reg24_pair ret = get24_STACK(0);
+			set_just_libc_reg_unknown(3);
+			set_HL(absolute_value(ret));
 		} break;
 		case _labs: {
-			set_all_reg_unknown();
+			reg32_pair ret = get32_STACK(0);
+			set_just_libc_reg_unknown(6);
+			set32_EUHL(absolute_value(ret));
 		} break;
 		case _i48abs: {
-			set_all_reg_unknown();
+			reg48_pair ret = get48_STACK(0);
+			set_just_libc_reg_unknown(6);
+			set48_UDEUHL(absolute_value(ret));
 		} break;
-		case _llabs: {
-			set_all_reg_unknown();
-		} break;
+		case _llabs:
 		case _imaxabs: {
-			set_all_reg_unknown();
+			reg64_pair ret = get64_STACK(0);
+			set_just_libc_reg_unknown(9);
+			set64_partial_BCUDEUHL(absolute_value(ret));
 		} break;
 		case _div: {
-			set_all_reg_unknown();
+			set_just_cxx_reg_unknown();
 		} break;
 		case _ldiv: {
-			set_all_reg_unknown();
+			set_just_cxx_reg_unknown();
 		} break;
 		case _i48div: {
-			set_all_reg_unknown();
+			set_just_cxx_reg_unknown();
 		} break;
-		case _lldiv: {
-			set_all_reg_unknown();
-		} break;
+		case _lldiv:
 		case _imaxdiv: {
-			set_all_reg_unknown();
-		} break;	
+			set_just_cxx_reg_unknown();
+		} break;
 	}
 }

@@ -30,26 +30,50 @@ typedef signed _BitInt(48) int48_t;
 inline int countl_zero(uint24_t x) {
 	return (x == 0) ? 24 : (countl_zero<uint32_t>(x) - 8);
 }
+inline int countl_zero(uint48_t x) {
+	return (x == 0) ? 48 : (countl_zero<uint64_t>(x) - 16);
+}
+
 inline int countl_one(uint24_t x) {
 	return countl_zero(~x);
 }
-inline int countr_zero(uint24_t x) {
-	return (x == 0) ? 24 : countl_zero<uint32_t>(x);
+inline int countl_one(uint48_t x) {
+	return countl_zero(~x);
 }
+
+inline int countr_zero(uint24_t x) {
+	return (x == 0) ? 24 : countr_zero<uint32_t>(x);
+}
+inline int countr_zero(uint48_t x) {
+	return (x == 0) ? 48 : countr_zero<uint64_t>(x);
+}
+
 inline int countr_one(uint24_t x) {
 	return countr_one<uint32_t>(x);
+}
+inline int countr_one(uint48_t x) {
+	return countr_one<uint64_t>(x);
 }
 
 inline int popcount(uint24_t x) {
 	return popcount(static_cast<uint32_t>(x));
 }
+inline int popcount(uint48_t x) {
+	return popcount(static_cast<uint64_t>(x));
+}
 
 inline bool has_single_bit(uint24_t x) {
+	return (x && !(x & (x - 1)));
+}
+inline bool has_single_bit(uint64_t x) {
 	return (x && !(x & (x - 1)));
 }
 
 inline uint24_t bit_floor(uint24_t x) {
 	return static_cast<uint24_t>(bit_floor(static_cast<uint32_t>(x)));
+}
+inline uint48_t bit_floor(uint48_t x) {
+	return static_cast<uint48_t>(bit_floor(static_cast<uint64_t>(x)));
 }
 
 template<typename T>

@@ -473,6 +473,19 @@ void merge_bits_overwrite(reg_pair<T> y) {
 	}
 }
 
+/** 
+ * @brief sets any bits that differ to unknown
+ */
+void merge_bits_intersection(reg_pair<T> y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		flag_state X = this->bit_test(i);
+		flag_state Y = y.bit_test(i);
+		if (X != Y) {
+			this->bit_unknown(i);
+		}
+	}
+}
+
 //------------------------------------------------------------------------------
 // Undefined Behaviour
 //------------------------------------------------------------------------------
@@ -1025,6 +1038,21 @@ template<typename T>
 reg_pair<T> operator-(reg_pair<T> x) {
 	x.complement();
 	x.increment();
+	return x;
+}
+
+template<typename T>
+reg_pair<T> absolute_value(reg_pair<T> x) {
+	using enum flag_state;
+	flag_state sign = x.test_signbit();
+	if (isknown_false(sign)) {
+		return x;
+	}
+	reg_pair<T> neg = -x;
+	if (isknown_true(sign)) {
+		return neg;
+	}
+	x.merge_bits_intersection(neg);
 	return x;
 }
 

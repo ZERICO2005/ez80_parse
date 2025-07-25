@@ -236,6 +236,75 @@ struct reg32_pair : public reg_pair<uint32_t> {
 	}
 };
 
+struct reg48_pair : public reg_pair<uint48_t> {
+	reg48_pair() {
+		bits = 0;
+		mask = 0;
+	}
+	reg48_pair(reg_pair<uint48_t> src) {
+		bits = src.bits;
+		mask = src.mask;
+	}
+	reg24_pair get_hi24() const {
+		reg24_pair ret;
+		ret.bits = (uint24_t)(bits >> 24);
+		ret.mask = (uint24_t)(mask >> 24);
+		return ret;
+	}
+	reg24_pair get_lo24() const {
+		reg24_pair ret;
+		ret.bits = (uint24_t)(bits);
+		ret.mask = (uint24_t)(mask);
+		return ret;
+	}
+	void set_value(reg24_pair hi, reg24_pair lo) {
+		bits = ((uint48_t)hi.bits << 24) | lo.bits;
+		mask = ((uint48_t)hi.mask << 24) | lo.mask;
+	}
+	void split_value(reg24_pair& hi, reg24_pair& lo) {
+		hi = get_hi24();
+		lo = get_lo24();
+	}
+};
+
+struct reg64_pair : public reg_pair<uint64_t> {
+	reg64_pair() {
+		bits = 0;
+		mask = 0;
+	}
+	reg64_pair(reg_pair<uint64_t> src) {
+		bits = src.bits;
+		mask = src.mask;
+	}
+	reg16_pair get_upper16() const {
+		reg16_pair ret;
+		ret.bits = (uint16_t)(bits >> 48);
+		ret.mask = (uint16_t)(mask >> 48);
+		return ret;
+	}
+	reg24_pair get_hi24() const {
+		reg24_pair ret;
+		ret.bits = (uint24_t)(bits >> 24);
+		ret.mask = (uint24_t)(mask >> 24);
+		return ret;
+	}
+	reg24_pair get_lo24() const {
+		reg24_pair ret;
+		ret.bits = (uint24_t)(bits);
+		ret.mask = (uint24_t)(mask);
+		return ret;
+	}
+	void set_value(reg16_pair up, reg24_pair hi, reg24_pair lo) {
+		bits = ((uint64_t)up.bits << 48) | ((uint64_t)hi.bits << 24) | lo.bits;
+		mask = ((uint64_t)up.mask << 48) | ((uint64_t)hi.mask << 24) | lo.mask;
+	}
+	void split_value(reg16_pair& up, reg24_pair& hi, reg24_pair& lo) {
+		up = get_upper16();
+		hi = get_hi24();
+		lo = get_lo24();
+	}
+};
+
 class flag_pair {
 	ez80_flag bits;
 	ez80_flag mask;
@@ -439,7 +508,7 @@ class current_state {
 	reg8_pair UIY;
 
 	static constexpr size_t stack_size = 12;
-	static_assert(stack_size >= 6, "invalid stack size");
+	static_assert(stack_size >= 9, "invalid stack size");
 	reg8_pair STACK[stack_size];
 
 	void set_pointers_invalid() {
@@ -469,6 +538,24 @@ class current_state {
 		UIY.set_unknown();
 		set_pointers_invalid();
 		F.set_flags_unknown();
+	}
+
+	void set_just_libc_reg_unknown(size_t stack_used) {
+		A.set_unknown();
+		C.set_unknown();
+		B.set_unknown();
+		UBC.set_unknown();
+		E.set_unknown();
+		D.set_unknown();
+		UDE.set_unknown();
+		L.set_unknown();
+		H.set_unknown();
+		UHL.set_unknown();
+		IYL.set_unknown();
+		IYH.set_unknown();
+		UIY.set_unknown();
+		F.set_flags_unknown();
+		set_stack_base_unknown(stack_used);
 	}
 
 	void set_just_reg_unknown() {
@@ -542,6 +629,19 @@ class current_state {
 		STACK[0] = arg.get_lo();
 		STACK[1] = arg.get_hi();
 		STACK[2] = arg.get_upper();
+		return ret;
+	}
+	void set_stack_base_unknown(size_t bytes) {
+		for (size_t i = 0; i < bytes && i < stack_size; i++) {
+			STACK[0].set_unknown();
+		}
+	}
+	reg8_pair get_stack(size_t offset) const {
+		if (offset < stack_size) {
+			return STACK[offset];
+		}
+		reg8_pair ret;
+		ret.set_unknown();
 		return ret;
 	}
 
@@ -1308,6 +1408,69 @@ class current_state {
 		return ret;
 	}
 
+	reg48_pair get48_UDEUHL() const {
+		reg48_pair ret;
+		ret.set_value(get_DE(), get_HL());
+		return ret;
+	}
+
+	reg48_pair get48_UIYUBC() const {
+		reg48_pair ret;
+		ret.set_value(get_IY(), get_BC());
+		return ret;
+	}
+
+	reg64_pair get64_BCUDEUHL() const {
+		reg64_pair ret;
+		ret.set_value(get16_BC(), get_DE(), get_HL());
+		return ret;
+	}
+
+/* retrive from stack */
+
+	reg8_pair get8_STACK(size_t offset = 0) const {
+		return get_stack(offset);
+	}
+
+	reg16_pair get16_STACK(size_t offset = 0) const {
+		reg16_pair ret;
+		ret.set_value(get_stack(offset + 1), get_stack(offset + 0));
+		return ret;
+	}
+
+	reg24_pair get24_STACK(size_t offset = 0) const {
+		reg24_pair ret;
+		ret.set_value(
+			get_stack(offset + 2),
+			get_stack(offset + 1),
+			get_stack(offset + 0)
+		);
+		return ret;
+	}
+
+	reg32_pair get32_STACK(size_t offset = 0) const {
+		reg32_pair ret;
+		ret.set_value(
+			get_stack(offset + 3),
+			get_stack(offset + 2),
+			get_stack(offset + 1),
+			get_stack(offset + 0)
+		);
+		return ret;
+	}
+
+	reg48_pair get48_STACK(size_t offset = 0) const {
+		reg48_pair ret;
+		ret.set_value(get24_STACK(offset + 3), get24_STACK(offset + 0));
+		return ret;
+	}
+
+	reg64_pair get64_STACK(size_t offset = 0) const {
+		reg64_pair ret;
+		ret.set_value(get16_STACK(offset + 6), get24_STACK(offset + 3), get24_STACK(offset + 0));
+		return ret;
+	}
+
 /* setters */
 
 	void set_AF(reg24_pair val) {
@@ -1448,6 +1611,34 @@ class current_state {
 	void set32_AUBC(reg32_pair val) {
 		A.set_value(val.get_hi8());
 		set_BC(val.get_lo24());
+	}
+
+	void set48_UDEUHL(reg48_pair val) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+	}
+
+	void set48_UIYUBC(reg48_pair val) {
+		set_IY(val.get_hi24());
+		set_BC(val.get_lo24());
+	}
+
+	void set64_zero_BCUDEUHL(reg64_pair val) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+		set16_zero_BC(val.get_upper16());
+	}
+
+	void set64_preserve_BCUDEUHL(reg64_pair val) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+		set16_preserve_BC(val.get_upper16());
+	}
+
+	void set64_partial_BCUDEUHL(reg64_pair val) {
+		set_DE(val.get_hi24());
+		set_HL(val.get_lo24());
+		set16_partial_BC(val.get_upper16());
 	}
 
 /* set unknown */
