@@ -616,13 +616,13 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		/* long double */
 
 		case __dcmp: {
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dcmpo: {
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dcmpu: {
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dneg: {
 			B.bit_unknown(7);
@@ -632,31 +632,31 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			BC_set_unknown();
 			DE_set_unknown();
 			HL_set_unknown();
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dsub: {
 			BC_set_unknown();
 			DE_set_unknown();
 			HL_set_unknown();
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dmul: {
 			BC_set_unknown();
 			DE_set_unknown();
 			HL_set_unknown();
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __ddiv: {
 			BC_set_unknown();
 			DE_set_unknown();
 			HL_set_unknown();
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __drem: {
 			BC_set_unknown();
 			DE_set_unknown();
 			HL_set_unknown();
-			set_stack_base_unknown(9);
+			stack.set_stack_base_unknown(9);
 		} break;
 		case __dtol: {
 			BC_set_unknown();
@@ -707,10 +707,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		/* CRT routines */
 
 		case __frameset: {
+			reg24_pair offset = get_HL();
 			set_all_reg_unknown();
+			if (offset.isknown_fully()) {
+				stack.frameset((int)((int24_t)offset.bits));
+			}
 		} break;
 		case __frameset0: {
 			set_all_reg_unknown();
+			stack.frameset0();
 		} break;
 		case __setflag: {
 			if (F.isknown_overflow()) {

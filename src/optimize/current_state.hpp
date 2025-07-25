@@ -484,6 +484,350 @@ public:
 
 };
 
+
+enum class reg_pointer_type {
+	UNKNOWN,
+	VALUE,
+	STACK,
+};
+
+class reg_pointer {
+public:
+	int offset;
+	reg_pointer_type type;
+	void set_invalid() {
+		using enum reg_pointer_type;
+		type = UNKNOWN;
+	}
+
+	bool is_valid() const {
+		using enum reg_pointer_type;
+		switch (type) {
+			case STACK:
+			{ return true; } break;
+			default:
+			{ return false; } break;
+		}
+	}
+
+	void set_offset(int value) {
+		using enum reg_pointer_type;
+		type = VALUE;
+		offset = value;
+	}
+	void set_offset(reg24_pair value) {
+		if (!value.isknown_fully()) {
+			set_invalid();
+			return;
+		}
+		set_offset(static_cast<int>(static_cast<int24_t>(value.bits)));
+	}
+	void add_sp() {
+		using enum reg_pointer_type;
+		switch (type) {
+			case VALUE: {
+				type = STACK;
+			} break;
+			default: {
+				set_invalid();
+			} break;
+		}
+	}
+	void modify_offset(int value) {
+		offset += value;
+	}
+	void modify_offset(reg8_pair value) {
+		if (!value.isknown_fully()) {
+			set_invalid();
+			return;
+		}
+		modify_offset(static_cast<int>(static_cast<int8_t>(value.bits)));
+	}
+	void modify_offset(reg24_pair value) {
+		if (!value.isknown_fully()) {
+			set_invalid();
+			return;
+		}
+		modify_offset(static_cast<int>(static_cast<int24_t>(value.bits)));
+	}
+	reg_pointer_type get_type() const {
+		return type;
+	}
+	void lea_copy(reg_pointer src, int src_offset = 0) {
+		*this = src;
+		this->modify_offset(src_offset);
+	}
+	void lea_copy(reg_pointer src, reg8_pair src_offset) {
+		*this = src;
+		this->modify_offset(src_offset);
+	}
+};
+
+class stack_frame {
+	static constexpr size_t stack_size = 60;
+	static_assert(stack_size >= 15, "invalid stack size");
+	reg8_pair stack_data[stack_size];
+	int base_offset;
+
+	/* reg data */
+public:
+	int IX_offset;
+	int IY_offset;
+	int HL_offset;
+	int DE_offset;
+	int BC_offset;
+
+	bool IX_valid;
+	bool IY_valid;
+	bool HL_valid;
+	bool DE_valid;
+	bool BC_valid;
+
+	/* internal */
+private:
+
+	bool adjust_index(int& index) const {
+		index = index - base_offset;
+		if (!(index >= 0 && static_cast<size_t>(index) < stack_size)) {
+			return false;
+		}
+		return true;
+	}
+
+public:
+	void write(reg8_pair src, int index) {
+		if (!adjust_index(index)) {
+			return;
+		}
+		stack_data[index] = src;
+	}
+
+	void write_base(reg8_pair src, size_t index) {
+		if (!(index < stack_size)) {
+			return;
+		}
+		stack_data[index] = src;
+	}
+
+	reg8_pair read(int index) const {
+		reg8_pair ret;
+		if (!adjust_index(index)) {
+			ret.set_unknown();
+			return ret;
+		}
+		ret = stack_data[index];
+		return ret;
+	}
+
+	reg8_pair read_base(size_t index) const {
+		reg8_pair ret;
+		if (!(index < stack_size)) {
+			ret.set_unknown();
+			return ret;
+		}
+		ret = stack_data[index];
+		return ret;
+	}
+
+public:
+
+	void set_stack_invalid() {
+		for (size_t i = 0; i < stack_size; i++) {
+			stack_data[i].set_unknown();
+		}
+		IX_offset = 0;
+		IY_offset = 0;
+		HL_offset = 0;
+		DE_offset = 0;
+		BC_offset = 0;
+		IX_valid = false;
+		IY_valid = false;
+		HL_valid = false;
+		DE_valid = false;
+		BC_valid = false;
+	}
+
+	stack_frame() {
+		set_stack_invalid();
+	}
+
+private:
+
+	reg24_pair load24(int offset, int reg_offset, bool reg_valid) const {
+		reg24_pair ret;
+		if (reg_valid == false) {
+			ret.set_unknown();
+			return ret;
+		}
+		int index = offset + reg_offset;
+		ret.set_value(
+			read(index + 2),
+			read(index + 1),
+			read(index + 0)
+		);
+		return ret;
+	}
+	reg8_pair load8(int offset, int reg_offset, bool reg_valid) const {
+		reg8_pair ret;
+		if (reg_valid == false) {
+			ret.set_unknown();
+			return ret;
+		}
+		int index = offset + reg_offset;
+		return read(index);
+	}
+	void store24(reg24_pair src, int offset, int reg_offset, bool reg_valid) {
+		if (reg_valid == false) {
+			// we don't know where this write occured
+			set_stack_invalid();
+			return;
+		}
+		int index = offset + reg_offset;
+		write(src.get_lo()   , index + 0);
+		write(src.get_hi()   , index + 1);
+		write(src.get_upper(), index + 2);
+	}
+	void store8(reg8_pair src, int offset, int reg_offset, bool reg_valid) {
+		if (reg_valid == false) {
+			// we don't know where this write occured
+			set_stack_invalid();
+			return;
+		}
+		int index = offset + reg_offset;
+		write(src, index);
+	}
+
+	/* stack operations */
+public:
+
+	void set_stack_base_unknown(size_t bytes) {
+		for (size_t i = 0; i < bytes && i < stack_size; i++) {
+			stack_data[i].set_unknown();
+		}
+	}
+
+	void decrement() {
+		base_offset++;
+		for (size_t i = stack_size; i --> 1;) {
+			stack_data[i] = stack_data[i - 1];
+		}
+		stack_data[0].set_unknown();
+	}
+	void increment() {
+		base_offset--;
+		for (size_t i = 1; i < stack_size; i++) {
+			stack_data[i - 1] = stack_data[i];
+		}
+		stack_data[stack_size - 1].set_unknown();
+	}
+	void push(reg24_pair src) {
+		base_offset += 3;
+		for (size_t i = stack_size; i --> 3;) {
+			stack_data[i] = stack_data[i - 3];
+		}
+		stack_data[0] = src.get_lo();
+		stack_data[1] = src.get_hi();
+		stack_data[2] = src.get_upper();
+	}
+	reg24_pair pop() {
+		base_offset -= 3;
+		reg24_pair ret;
+		ret.set_value(stack_data[2], stack_data[1], stack_data[0]);
+		for (size_t i = 3; i < stack_size; i++) {
+			stack_data[i - 3] = stack_data[i];
+		}
+		stack_data[stack_size - 3].set_unknown();
+		stack_data[stack_size - 2].set_unknown();
+		stack_data[stack_size - 1].set_unknown();
+		return ret;
+	}
+	reg24_pair exchange(reg24_pair arg) {
+		reg24_pair ret;
+		ret.set_value(stack_data[2], stack_data[1], stack_data[0]);
+		stack_data[0] = arg.get_lo();
+		stack_data[1] = arg.get_hi();
+		stack_data[2] = arg.get_upper();
+		return ret;
+	}
+
+	void load_SP_reg(int offset, bool valid) {
+		if (valid == false) {
+			set_stack_invalid();
+			return;
+		}
+		for (int i = 0; i < offset; i++) {
+			increment();
+		}
+	}
+
+/* others */
+
+	void set_IX(int offset) {
+		IX_offset = offset;
+		IX_valid = true;
+	}
+	void modifiy_IX(int change) {
+		IX_offset += change;
+	}
+	void invalidate_IX() {
+		IX_valid = false;
+	}
+	void load_SP_IX() {
+		load_SP_reg(IX_offset, IX_valid);
+	}
+	reg24_pair load24_IX(int offset) const {
+		return load24(offset, IX_offset, IX_valid);
+	}
+	reg8_pair load8_IX(int offset) const {
+		return load8(offset, IX_offset, IX_valid);
+	}
+	void store24_IX(reg24_pair src, int offset) {
+		store24(src, offset, IX_offset, IX_valid);
+	}
+	void store8_IX(reg8_pair src, int offset) {
+		store8(src, offset, IX_offset, IX_valid);
+	}
+
+	reg8_pair read8(reg_pointer ptr, int offset) {
+		return load8(offset, ptr.offset, true);
+	}
+	reg24_pair read24(reg_pointer ptr, int offset) {
+		return load24(offset, ptr.offset, true);
+	}
+	void write8(reg8_pair src, reg_pointer ptr, int offset) {
+		store8(src, offset, ptr.offset, true);
+	}
+	void write24(reg24_pair src, reg_pointer ptr, int offset) {
+		store24(src, offset, ptr.offset, true);
+	}
+
+	void frameset(int offset) {
+		/*
+		| sp + 3 = ret
+		| sp + 0 = old IX 
+		| sp - n = data
+		| sp - m = temp
+		*/
+		// offset by 3 to store IX technically
+		set_stack_invalid();
+		reg24_pair ret_addr;
+		ret_addr.set_unknown();
+		exchange(ret_addr);
+		reg24_pair ix_val;
+		ix_val.set_unknown();
+		push(ix_val);
+		for (int i = 0; i < -offset; i++) {
+			decrement();
+		}
+
+		base_offset = offset;
+		set_IX(0);
+	}
+	void frameset0() {
+		frameset(0);
+	}
+};
+
 class current_state {
 	public:
 
@@ -519,15 +863,140 @@ class current_state {
 	reg8_pair IYH;
 	reg8_pair UIY;
 
+	stack_frame stack;
+
+	reg_pointer PHL;
+	reg_pointer PDE;
+	reg_pointer PBC;
+	reg_pointer PIX;
+	reg_pointer PIY;
+
+	void set_pointers_invalid() {
+		PHL.set_invalid();
+		PDE.set_invalid();
+		PBC.set_invalid();
+		PIX.set_invalid();
+		PIY.set_invalid();
+		invalidate_stack();
+	}
+
+	void unknown_write() {
+		set_pointers_invalid();
+	}
+
+	void unknown_read() {
+		set_pointers_invalid();
+	}
+
+	void lost_control_of_pointer() {
+		set_pointers_invalid();
+	}
+
+	reg8_pair read8(reg_pointer& ptr, int offset = 0) {
+		reg8_pair ret;
+		using enum reg_pointer_type;
+		switch (ptr.get_type()) {
+			case STACK: {
+				ret.set_value(stack.read8(ptr, offset));
+			} break;
+			default: {
+				ret.set_unknown();
+				unknown_read();
+			} break;
+		}
+		return ret;
+	}
+	reg8_pair read8(reg_pointer& ptr, reg8_pair offset) {
+		reg8_pair ret;
+		if (!offset.isknown_fully()) {
+			ret.set_unknown();
+			unknown_read();
+			return ret;
+		}
+		return read8(ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+	}
+	reg24_pair read24(reg_pointer& ptr, int offset = 0) {
+		reg24_pair ret;
+		using enum reg_pointer_type;
+		switch (ptr.get_type()) {
+			case STACK: {
+				ret.set_value(stack.read24(ptr, offset));
+			} break;
+			default: {
+				ret.set_unknown();
+				unknown_read();
+			} break;
+		}
+		return ret;
+	}
+	reg24_pair read24(reg_pointer& ptr, reg8_pair offset) {
+		reg24_pair ret;
+		if (!offset.isknown_fully()) {
+			ret.set_unknown();
+			unknown_read();
+			return ret;
+		}
+		return read24(ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+	}
+
+	void write8(reg8_pair src, reg_pointer& ptr, int offset = 0) {
+		using enum reg_pointer_type;
+		switch (ptr.get_type()) {
+			case STACK: {
+				stack.write8(src, ptr, offset);
+			} break;
+			default: {
+				unknown_write();
+			} break;
+		}
+	}
+
+	void write8(reg8_pair src, reg_pointer& ptr, reg8_pair offset) {
+		if (!offset.isknown_fully()) {
+			unknown_write();
+			return;
+		}
+		write8(src, ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+	}
+
+	void write24(reg24_pair src, reg_pointer& src_ptr, reg_pointer& ptr, int offset = 0) {
+		using enum reg_pointer_type;
+		if (src_ptr.is_valid()) {
+			lost_control_of_pointer();
+		}
+		switch (ptr.get_type()) {
+			case STACK: {
+				stack.write24(src, ptr, offset);
+			} break;
+			default: {
+				unknown_write();
+			} break;
+		}
+	}
+
+	void write24(reg24_pair src, reg_pointer& src_ptr, reg_pointer& ptr, reg8_pair offset) {
+		if (!offset.isknown_fully()) {
+			if (src_ptr.is_valid()) {
+				lost_control_of_pointer();
+			}
+			unknown_write();
+			return;
+		}
+		write24(src, src_ptr, ptr, static_cast<int>(static_cast<int8_t>(offset.bits)));
+	}
+
 	static constexpr size_t stack_size = 12;
 	static_assert(stack_size >= 9, "invalid stack size");
 	reg8_pair STACK[stack_size];
 
-	void set_pointers_invalid() {
+	void invalidate_stack() {
+		stack.set_stack_invalid();
 		for (size_t i = 0; i < stack_size; i++) {
 			STACK[i].set_unknown();
 		}
 	}
+
+
 
 	void set_previous_instructions_invalid() {
 		using enum ez80_op_code;
@@ -568,7 +1037,7 @@ class current_state {
 		IYH.set_unknown();
 		UIY.set_unknown();
 		F.set_flags_unknown();
-		set_stack_base_unknown(stack_used);
+		stack.set_stack_base_unknown(stack_used);
 	}
 
 	void set_just_reg_unknown() {
@@ -598,69 +1067,12 @@ class current_state {
 
 /* stack operations */
 
-	void push_stack(reg24_pair src) {
-		for (size_t i = stack_size; i --> 3;) {
-			STACK[i] = STACK[i - 3];
-		}
-		STACK[0] = src.get_lo();
-		STACK[1] = src.get_hi();
-		STACK[2] = src.get_upper();
-	}
-	void decrement_stack() {
-		for (size_t i = stack_size; i --> 1;) {
-			STACK[i] = STACK[i - 1];
-		}
-		STACK[0].set_unknown();
-	}
-	reg24_pair pop_stack() {
-		reg24_pair ret;
-		ret.set_value(STACK[2], STACK[1], STACK[0]);
-		for (size_t i = 3; i < stack_size; i++) {
-			STACK[i - 3] = STACK[i];
-		}
-		STACK[stack_size - 3].set_unknown();
-		STACK[stack_size - 2].set_unknown();
-		STACK[stack_size - 1].set_unknown();
-		return ret;
-	}
-	void increment_stack() {
-		for (size_t i = 1; i < stack_size; i++) {
-			STACK[i - 1] = STACK[i];
-		}
-		STACK[stack_size - 1].set_unknown();
-	}
 	void pea_stack(reg24_pair src, reg8_pair offset) {
 		reg24_pair dst;
 		reg24_pair extend;
 		extend.set_sign_extend(offset);
 		dst = (src + extend);
-		push_stack(dst);
-	}
-	reg24_pair ex_stack(reg24_pair arg) {
-		reg24_pair ret;
-		ret.set_value(STACK[2], STACK[1], STACK[0]);
-		STACK[0] = arg.get_lo();
-		STACK[1] = arg.get_hi();
-		STACK[2] = arg.get_upper();
-		return ret;
-	}
-	void set_stack_base_unknown(size_t bytes) {
-		for (size_t i = 0; i < bytes && i < stack_size; i++) {
-			STACK[0].set_unknown();
-		}
-	}
-	reg8_pair get_stack(size_t offset) const {
-		if (offset < stack_size) {
-			return STACK[offset];
-		}
-		reg8_pair ret;
-		ret.set_unknown();
-		return ret;
-	}
-	void set_stack(reg8_pair src, size_t offset) {
-		if (offset < stack_size) {
-			STACK[offset] = src;
-		}
+		stack.push(dst);
 	}
 
 /* instructions */
@@ -1479,21 +1891,21 @@ class current_state {
 /* retrive from stack */
 
 	reg8_pair get8_STACK(size_t offset = 0) const {
-		return get_stack(offset);
+		return stack.read_base(offset);
 	}
 
 	reg16_pair get16_STACK(size_t offset = 0) const {
 		reg16_pair ret;
-		ret.set_value(get_stack(offset + 1), get_stack(offset + 0));
+		ret.set_value(stack.read_base(offset + 1), stack.read_base(offset + 0));
 		return ret;
 	}
 
 	reg24_pair get24_STACK(size_t offset = 0) const {
 		reg24_pair ret;
 		ret.set_value(
-			get_stack(offset + 2),
-			get_stack(offset + 1),
-			get_stack(offset + 0)
+			stack.read_base(offset + 2),
+			stack.read_base(offset + 1),
+			stack.read_base(offset + 0)
 		);
 		return ret;
 	}
@@ -1501,10 +1913,10 @@ class current_state {
 	reg32_pair get32_STACK(size_t offset = 0) const {
 		reg32_pair ret;
 		ret.set_value(
-			get_stack(offset + 3),
-			get_stack(offset + 2),
-			get_stack(offset + 1),
-			get_stack(offset + 0)
+			stack.read_base(offset + 3),
+			stack.read_base(offset + 2),
+			stack.read_base(offset + 1),
+			stack.read_base(offset + 0)
 		);
 		return ret;
 	}
@@ -1695,26 +2107,14 @@ class current_state {
 		reg16_pair up;
 		reg24_pair hi, lo;
 		val.split_value(up, hi, lo);
-		set_stack(lo.get_lo()   , offset + 0);
-		set_stack(lo.get_hi()   , offset + 1);
-		set_stack(lo.get_upper(), offset + 2);
-		set_stack(hi.get_lo()   , offset + 3);
-		set_stack(hi.get_hi()   , offset + 4);
-		set_stack(hi.get_upper(), offset + 5);
-		set_stack(up.get_lo()   , offset + 6);
-		set_stack(up.get_hi()   , offset + 7);
-	}
-
-	void set64_preserve_STACK(reg64_pair val, size_t offset = 0) {
-		set_DE(val.get_hi24());
-		set_HL(val.get_lo24());
-		set16_preserve_BC(val.get_upper16());
-	}
-
-	void set64_partial_STACK(reg64_pair val, size_t offset = 0) {
-		set_DE(val.get_hi24());
-		set_HL(val.get_lo24());
-		set16_partial_BC(val.get_upper16());
+		stack.write_base(lo.get_lo()   , offset + 0);
+		stack.write_base(lo.get_hi()   , offset + 1);
+		stack.write_base(lo.get_upper(), offset + 2);
+		stack.write_base(hi.get_lo()   , offset + 3);
+		stack.write_base(hi.get_hi()   , offset + 4);
+		stack.write_base(hi.get_upper(), offset + 5);
+		stack.write_base(up.get_lo()   , offset + 6);
+		stack.write_base(up.get_hi()   , offset + 7);
 	}
 
 /* set unknown */
@@ -1737,6 +2137,7 @@ class current_state {
 		UIX.set_unknown();
 		IXH.set_unknown();
 		IXL.set_unknown();
+		stack.invalidate_IX();
 	}
 	void IY_set_unknown() {
 		UIY.set_unknown();
@@ -1800,13 +2201,14 @@ class current_state {
 	string print_state() const {
 		string output = (
 		#if 0
-			"S9 " + print_reg24(STACK[11], STACK[10], STACK[9]) +
-			" | S6 " + print_reg24(STACK[8], STACK[7], STACK[6]) +
-			" | S3 " + print_reg24(STACK[5], STACK[4], STACK[3]) +
+			"S12 " + print_reg24(stack.read_base(14), stack.read_base(13), stack.read_base(12)) +
+			" | S9 " + print_reg24(stack.read_base(11), stack.read_base(10), stack.read_base(9)) +
+			" | S6 " + print_reg24(stack.read_base(8), stack.read_base(7), stack.read_base(6)) +
+			" | S3 " + print_reg24(stack.read_base(5), stack.read_base(4), stack.read_base(3)) +
 		#else
-			"S3 " + print_reg24(STACK[5], STACK[4], STACK[3]) +
+			"S3 " + print_reg24(stack.read_base(5), stack.read_base(4), stack.read_base(3)) +
 		#endif
-			" | S0 " + print_reg24(STACK[2], STACK[1], STACK[0]) +
+			" | S0 " + print_reg24(stack.read_base(2), stack.read_base(1), stack.read_base(0)) +
 			" | IX " + print_reg24(UIX, IXH, IXL) +
 			" | IY " + print_reg24(UIY, IYH, IYL) +
 			" | A " + print_reg8(A) +

@@ -337,6 +337,13 @@ void optimize_asm(ez80_code_section& program) {
 		using enum ez80_op_code;
 		ez80_code current = *it;
 
+		// if (current.original_line < 3450) {
+		// 	++it;
+		// 	continue;
+		// }
+		// if (current.original_line > 3550) {
+		// 	break;
+		// }
 		switch (current.type) {
 			case known_func: {
 				using enum ez80_known_function;

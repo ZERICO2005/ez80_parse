@@ -12,6 +12,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 	uint24_t imm_value = instruction.value;
 	reg8_pair imm_offset;
 	imm_offset.set_value(instruction.offset);
+	int imm_stack_offset = (int)instruction.offset;
 	reg8_pair imm8;
 	reg24_pair imm16;
 	reg24_pair imm24;
@@ -40,11 +41,11 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case TST_A_A: { tst_a_a(); } break;
 
 		case ADD_HL_HL: { set_HL(add24_hl_hl(get_HL())); } break;
-		case ADD_IX_IX: { set_IX(add24_hl_hl(get_IX())); } break;
+		case ADD_IX_IX: { set_IX(add24_hl_hl(get_IX())); stack.invalidate_IX(); } break;
 		case ADD_IY_IY: { set_IY(add24_hl_hl(get_IY())); } break;
 	
 		case ADD_HL_HL_SIS: { set16_zero_HL(add16_hl_hl(get16_HL())); } break;
-		case ADD_IX_IX_SIS: { set16_zero_IX(add16_hl_hl(get16_IX())); } break;
+		case ADD_IX_IX_SIS: { set16_zero_IX(add16_hl_hl(get16_IX())); stack.invalidate_IX(); } break;
 		case ADD_IY_IY_SIS: { set16_zero_IY(add16_hl_hl(get16_IY())); } break;
 
 		case ADC_HL_HL: { set_HL(adc24_hl_hl(get_HL())); } break;
@@ -96,20 +97,21 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			C.set_unknown();
 		} break;
 
-		case POP_AF: { set_AF(pop_stack()); } break;
-		case POP_BC: { set_BC(pop_stack()); } break;
-		case POP_DE: { set_DE(pop_stack()); } break;
-		case POP_HL: { set_HL(pop_stack()); } break;
-		case POP_IX: { set_IX(pop_stack()); } break;
-		case POP_IY: { set_IY(pop_stack()); } break;
+		case POP_AF: { set_AF(stack.pop()); } break;
+		case POP_BC: { set_BC(stack.pop()); } break;
+		case POP_DE: { set_DE(stack.pop()); } break;
+		case POP_HL: { set_HL(stack.pop()); } break;
+		case POP_IX: { set_IX(stack.pop()); } break;
+		case POP_IY: { set_IY(stack.pop()); } break;
 		case EX_SP_HL: {
-			set_HL(ex_stack(get_HL()));
+			set_HL(stack.exchange(get_HL()));
 		} break;
 		case EX_SP_IX: {
-			set_IX(ex_stack(get_IX()));
+			set_IX(stack.exchange(get_IX()));
+			stack.invalidate_IX();
 		} break;
 		case EX_SP_IY: {
-			set_IY(ex_stack(get_IY()));
+			set_IY(stack.exchange(get_IY()));
 		} break;
 		case INC_BC: {
 			set_BC(get_BC().increment());
@@ -121,10 +123,11 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_HL(get_HL().increment());
 		} break;
 		case INC_SP: {
-			increment_stack();
+			stack.increment();
 		} break;
 		case INC_IX: {
 			set_IX(get_IX().increment());
+			stack.modifiy_IX(+1);
 		} break;
 		case INC_IY: {
 			set_IY(get_IY().increment());
@@ -143,6 +146,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case INC_IX_SIS: {
 			set16_zero_IX(get16_IX().increment());
+			stack.invalidate_IX();
 		} break;
 		case INC_IY_SIS: {
 			set16_zero_IY(get16_IY().increment());
@@ -157,10 +161,11 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_HL(get_HL().decrement());
 		} break;
 		case DEC_SP: {
-			decrement_stack();
+			stack.decrement();
 		} break;
 		case DEC_IX: {
 			set_IX(get_IX().decrement());
+			stack.modifiy_IX(-1);
 		} break;
 		case DEC_IY: {
 			set_IY(get_IY().decrement());
@@ -179,6 +184,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case DEC_IX_SIS: {
 			set16_zero_IX(get16_IX().decrement());
+			stack.invalidate_IX();
 		} break;
 		case DEC_IY_SIS: {
 			set16_zero_IY(get16_IY().decrement());
@@ -195,6 +201,15 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case MLT_SP: {
 			SP_set_unknown();
 		} break;
+
+		case LD_A_PIX: { A.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_B_PIX: { B.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_C_PIX: { C.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_D_PIX: { D.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_E_PIX: { E.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_H_PIX: { H.set_value(stack.load8_IX(imm_stack_offset)); } break;
+		case LD_L_PIX: { L.set_value(stack.load8_IX(imm_stack_offset)); } break;
+
 		case LD_A_N: { A.set_value(imm8); } break;
 		case LD_B_N: { B.set_value(imm8); } break;
 		case LD_C_N: { C.set_value(imm8); } break;
@@ -202,8 +217,8 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_E_N: { E.set_value(imm8); } break;
 		case LD_H_N: { H.set_value(imm8); } break;
 		case LD_L_N: { L.set_value(imm8); } break;
-		case LD_IXL_N: { IXL.set_value(imm8); } break;
-		case LD_IXH_N: { IXH.set_value(imm8); } break;
+		case LD_IXL_N: { IXL.set_value(imm8); stack.invalidate_IX(); } break;
+		case LD_IXH_N: { IXH.set_value(imm8); stack.invalidate_IX(); } break;
 		case LD_IYL_N: { IYL.set_value(imm8); } break;
 		case LD_IYH_N: { IYH.set_value(imm8); } break;
 		case LD_A_B: { A.set_value(B); } break;
@@ -212,45 +227,39 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_A_E: { A.set_value(E); } break;
 		case LD_A_H: { A.set_value(H); } break;
 		case LD_A_L: { A.set_value(L); } break;
-		case LD_A_IXH: { A.set_value(IXH); } break;
-		case LD_A_IXL: { A.set_value(IXL); } break;
+		case LD_A_IXH: { A.set_value(IXH); stack.invalidate_IX(); } break;
+		case LD_A_IXL: { A.set_value(IXL); stack.invalidate_IX(); } break;
 		case LD_A_IYH: { A.set_value(IYH); } break;
 		case LD_A_IYL: { A.set_value(IYL); } break;
 		case LD_A_ADDR:
 		case LD_A_PBC:
 		case LD_A_PDE:
 		case LD_A_PHL:
-		case LD_A_PIX:
+		
 		case LD_A_PIY: {
 			A.set_unknown();
 		} break;
 		case LD_B_PHL:
-		case LD_B_PIX:
 		case LD_B_PIY: {
 			B.set_unknown();
 		} break;
 		case LD_C_PHL:
-		case LD_C_PIX:
 		case LD_C_PIY: {
 			C.set_unknown();
 		} break;
 		case LD_D_PHL:
-		case LD_D_PIX:
 		case LD_D_PIY: {
 			D.set_unknown();
 		} break;
 		case LD_E_PHL:
-		case LD_E_PIX:
 		case LD_E_PIY: {
 			E.set_unknown();
 		} break;
 		case LD_H_PHL:
-		case LD_H_PIX:
 		case LD_H_PIY: {
 			H.set_unknown();
 		} break;
 		case LD_L_PHL:
-		case LD_L_PIX:
 		case LD_L_PIY: {
 			L.set_unknown();
 		} break;
@@ -418,40 +427,52 @@ void current_state::next_instruction(ez80_instruction instruction) {
 
 		case LD_IXH_A: {
 			IXH.set_value(A);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXH_B: {
 			IXH.set_value(B);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXH_C: {
 			IXH.set_value(C);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXH_D: {
 			IXH.set_value(D);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXH_E: {
 			IXH.set_value(E);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXH_IXL: {
 			IXH.set_value(IXL);
+			stack.invalidate_IX();
 		} break;
 
 		case LD_IXL_A: {
 			IXL.set_value(A);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXL_B: {
 			IXL.set_value(B);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXL_C: {
 			IXL.set_value(C);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXL_D: {
 			IXL.set_value(D);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXL_E: {
 			IXL.set_value(E);
+			stack.invalidate_IX();
 		} break;
 		case LD_IXL_IXH: {
 			IXL.set_value(IXH);
+			stack.invalidate_IX();
 		} break;
 
 		case LD_IYH_A: {
@@ -499,7 +520,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case LD_HL_ADDR:
 		case LD_HL_PHL:
-		case LD_HL_PIX:
 		case LD_HL_PIY: {
 			HL_set_unknown();
 		} break;
@@ -511,7 +531,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case LD_DE_ADDR:
 		case LD_DE_PHL:
-		case LD_DE_PIX:
 		case LD_DE_PIY: {
 			DE_set_unknown();
 		} break;
@@ -523,7 +542,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case LD_BC_ADDR:
 		case LD_BC_PHL:
-		case LD_BC_PIX:
 		case LD_BC_PIY: {
 			BC_set_unknown();
 		} break;
@@ -531,22 +549,26 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_SP_N_SIS: {
 
 		} break;
+		case LD_SP_IX: {
+			stack.load_SP_IX();
+		} break;
 		case LD_SP_HL:
-		case LD_SP_IX:
 		case LD_SP_IY:
 		case LD_SP_ADDR: {
 
 		} break;
 		case LD_IX_N: {
 			imm24.split_value(UIX, IXH, IXL);
+			stack.invalidate_IX();
 		} break;
 		case LD_IX_N_SIS: {
 			imm16.split_value(UIX, IXH, IXL);
+			stack.invalidate_IX();
 		} break;
 		case LD_IX_ADDR:
 		case LD_IX_PHL:
-		case LD_IX_PIX:
 		case LD_IX_PIY: {
+			stack.invalidate_IX();
 			IX_set_unknown();
 		} break;
 		case LD_IY_N: {
@@ -557,78 +579,87 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 		case LD_IY_ADDR:
 		case LD_IY_PHL:
-		case LD_IY_PIX:
 		case LD_IY_PIY: {
 			IY_set_unknown();
 		} break;
+
+
+		case LD_HL_PIX: { set_HL(stack.load24_IX(imm_stack_offset)); } break;
+		case LD_DE_PIX: { set_DE(stack.load24_IX(imm_stack_offset)); } break;
+		case LD_BC_PIX: { set_BC(stack.load24_IX(imm_stack_offset)); } break;
+		case LD_IX_PIX: { set_IX(stack.load24_IX(imm_stack_offset)); stack.invalidate_IX(); } break;
+		case LD_IY_PIX: { set_IY(stack.load24_IX(imm_stack_offset)); } break;
+
+		case LD_PIX_A: { stack.store8_IX(A, imm_stack_offset); } break;
+		case LD_PIX_B: { stack.store8_IX(B, imm_stack_offset); } break;
+		case LD_PIX_C: { stack.store8_IX(C, imm_stack_offset); } break;
+		case LD_PIX_D: { stack.store8_IX(D, imm_stack_offset); } break;
+		case LD_PIX_E: { stack.store8_IX(E, imm_stack_offset); } break;
+		case LD_PIX_H: { stack.store8_IX(H, imm_stack_offset); } break;
+		case LD_PIX_L: { stack.store8_IX(L, imm_stack_offset); } break;
+		case LD_PIX_HL: { stack.store24_IX(get_HL(), imm_stack_offset); } break;
+		case LD_PIX_DE: { stack.store24_IX(get_DE(), imm_stack_offset); } break;
+		case LD_PIX_BC: { stack.store24_IX(get_BC(), imm_stack_offset); } break;
+		case LD_PIX_IX: { stack.store24_IX(get_IX(), imm_stack_offset); } break;
+		case LD_PIX_IY: { stack.store24_IX(get_IY(), imm_stack_offset); } break;
 
 		case LD_ADDR_A:
 		case LD_PBC_A:
 		case LD_PDE_A:
 		case LD_PHL_A:
-		case LD_PIX_A:
 		case LD_PIY_A: {
 			set_pointers_invalid();
 		} break;
 		
 		case LD_PHL_B:
-		case LD_PIX_B:
 		case LD_PIY_B: {
 			set_pointers_invalid();
 		} break;
 		case LD_PHL_C:
-		case LD_PIX_C:
 		case LD_PIY_C: {
 			set_pointers_invalid();
 		} break;
 		case LD_PHL_D:
-		case LD_PIX_D:
 		case LD_PIY_D: {
 			set_pointers_invalid();
 		} break;
 		case LD_PHL_E:
-		case LD_PIX_E:
 		case LD_PIY_E: {
 			set_pointers_invalid();
 		} break;
 		case LD_PHL_H:
-		case LD_PIX_H:
 		case LD_PIY_H: {
 			set_pointers_invalid();
 		} break;
 		case LD_PHL_L:
-		case LD_PIX_L:
 		case LD_PIY_L: {
 			set_pointers_invalid();
 		} break;
 
 		case LD_ADDR_HL:
 		case LD_PHL_HL:
-		case LD_PIX_HL:
 		case LD_PIY_HL: {
 			set_pointers_invalid();
 		} break;
 		case LD_ADDR_DE:
 		case LD_PHL_DE:
-		case LD_PIX_DE:
 		case LD_PIY_DE: {
 			set_pointers_invalid();
 		} break;
 		case LD_ADDR_BC:
 		case LD_PHL_BC:
-		case LD_PIX_BC:
 		case LD_PIY_BC: {
 			set_pointers_invalid();
 		} break;
 		case LD_ADDR_IX:
 		case LD_PHL_IX:
-		case LD_PIX_IX:
 		case LD_PIY_IX: {
+			// we lost control of pointers to the stack
+			stack.set_stack_invalid();
 			set_pointers_invalid();
 		} break;
 		case LD_ADDR_IY:
 		case LD_PHL_IY:
-		case LD_PIX_IY:
 		case LD_PIY_IY: {
 			set_pointers_invalid();
 		} break;
@@ -636,26 +667,26 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_pointers_invalid();
 		} break;
 
-		case LEA_BC_IX: { set_BC(reg24_lea(get_BC(), get_IX(), imm_offset)); } break;
+		case LEA_BC_IX: { set_BC(reg24_lea(get_BC(), get_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_BC_IY: { set_BC(reg24_lea(get_BC(), get_IY(), imm_offset)); } break;
-		case LEA_DE_IX: { set_DE(reg24_lea(get_DE(), get_IX(), imm_offset)); } break;
+		case LEA_DE_IX: { set_DE(reg24_lea(get_DE(), get_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_DE_IY: { set_DE(reg24_lea(get_DE(), get_IY(), imm_offset)); } break;
-		case LEA_HL_IX: { set_HL(reg24_lea(get_HL(), get_IX(), imm_offset)); } break;
+		case LEA_HL_IX: { set_HL(reg24_lea(get_HL(), get_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_HL_IY: { set_HL(reg24_lea(get_HL(), get_IY(), imm_offset)); } break;
-		case LEA_IX_IX: { set_IX(reg24_lea(get_IX(), get_IX(), imm_offset)); } break;
-		case LEA_IX_IY: { set_IX(reg24_lea(get_IX(), get_IY(), imm_offset)); } break;
-		case LEA_IY_IX: { set_IY(reg24_lea(get_IY(), get_IX(), imm_offset)); } break;
+		case LEA_IX_IX: { set_IX(reg24_lea(get_IX(), get_IX(), imm_offset)); stack.modifiy_IX(imm_stack_offset); } break;
+		case LEA_IX_IY: { set_IX(reg24_lea(get_IX(), get_IY(), imm_offset)); stack.set_stack_invalid(); } break;
+		case LEA_IY_IX: { set_IY(reg24_lea(get_IY(), get_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_IY_IY: { set_IY(reg24_lea(get_IY(), get_IY(), imm_offset)); } break;
 
-		case LEA_BC_IX_SIS: { set16_zero_BC(reg16_lea(get16_BC(), get16_IX(), imm_offset)); } break;
+		case LEA_BC_IX_SIS: { set16_zero_BC(reg16_lea(get16_BC(), get16_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_BC_IY_SIS: { set16_zero_BC(reg16_lea(get16_BC(), get16_IY(), imm_offset)); } break;
-		case LEA_DE_IX_SIS: { set16_zero_DE(reg16_lea(get16_DE(), get16_IX(), imm_offset)); } break;
+		case LEA_DE_IX_SIS: { set16_zero_DE(reg16_lea(get16_DE(), get16_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_DE_IY_SIS: { set16_zero_DE(reg16_lea(get16_DE(), get16_IY(), imm_offset)); } break;
-		case LEA_HL_IX_SIS: { set16_zero_HL(reg16_lea(get16_HL(), get16_IX(), imm_offset)); } break;
+		case LEA_HL_IX_SIS: { set16_zero_HL(reg16_lea(get16_HL(), get16_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_HL_IY_SIS: { set16_zero_HL(reg16_lea(get16_HL(), get16_IY(), imm_offset)); } break;
-		case LEA_IX_IX_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IX(), imm_offset)); } break;
-		case LEA_IX_IY_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IY(), imm_offset)); } break;
-		case LEA_IY_IX_SIS: { set16_zero_IY(reg16_lea(get16_IY(), get16_IX(), imm_offset)); } break;
+		case LEA_IX_IX_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IX(), imm_offset)); stack.set_stack_invalid(); } break;
+		case LEA_IX_IY_SIS: { set16_zero_IX(reg16_lea(get16_IX(), get16_IY(), imm_offset)); stack.set_stack_invalid(); } break;
+		case LEA_IY_IX_SIS: { set16_zero_IY(reg16_lea(get16_IY(), get16_IX(), imm_offset)); stack.set_stack_invalid(); } break;
 		case LEA_IY_IY_SIS: { set16_zero_IY(reg16_lea(get16_IY(), get16_IY(), imm_offset)); } break;
 
 		case SET_0_A: { A.bit_set(0); } break;
@@ -775,9 +806,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_HL_BC: { set_HL(reg24_add(get_HL(), get_BC())); } break;
 		case ADD_HL_DE: { set_HL(reg24_add(get_HL(), get_DE())); } break;
 		case ADD_HL_SP: { set_HL(reg24_add(get_HL(), get_SP())); } break;
-		case ADD_IX_BC: { set_IX(reg24_add(get_IX(), get_BC())); } break;
-		case ADD_IX_DE: { set_IX(reg24_add(get_IX(), get_DE())); } break;
-		case ADD_IX_SP: { set_IX(reg24_add(get_IX(), get_SP())); } break;
+		case ADD_IX_BC: { set_IX(reg24_add(get_IX(), get_BC())); stack.invalidate_IX(); } break;
+		case ADD_IX_DE: { set_IX(reg24_add(get_IX(), get_DE())); stack.invalidate_IX(); } break;
+		case ADD_IX_SP: { set_IX(reg24_add(get_IX(), get_SP())); stack.invalidate_IX(); } break;
 		case ADD_IY_BC: { set_IY(reg24_add(get_IY(), get_BC())); } break;
 		case ADD_IY_DE: { set_IY(reg24_add(get_IY(), get_DE())); } break;
 		case ADD_IY_SP: { set_IY(reg24_add(get_IY(), get_SP())); } break;
@@ -785,9 +816,9 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_HL_BC_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_BC())); } break;
 		case ADD_HL_DE_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_DE())); } break;
 		case ADD_HL_SP_SIS: { set16_zero_HL(reg16_add(get16_HL(), get16_SP())); } break;
-		case ADD_IX_BC_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_BC())); } break;
-		case ADD_IX_DE_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_DE())); } break;
-		case ADD_IX_SP_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_SP())); } break;
+		case ADD_IX_BC_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_BC())); stack.invalidate_IX(); } break;
+		case ADD_IX_DE_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_DE())); stack.invalidate_IX(); } break;
+		case ADD_IX_SP_SIS: { set16_zero_IX(reg16_add(get16_IX(), get16_SP())); stack.invalidate_IX(); } break;
 		case ADD_IY_BC_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_BC())); } break;
 		case ADD_IY_DE_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_DE())); } break;
 		case ADD_IY_SP_SIS: { set16_zero_IY(reg16_add(get16_IY(), get16_SP())); } break;
@@ -954,8 +985,8 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case INC_E  : { reg8_inc(E  ); } break;
 		case INC_H  : { reg8_inc(H  ); } break;
 		case INC_L  : { reg8_inc(L  ); } break;
-		case INC_IXH: { reg8_inc(IXH); } break;
-		case INC_IXL: { reg8_inc(IXL); } break;
+		case INC_IXH: { reg8_inc(IXH); stack.invalidate_IX(); } break;
+		case INC_IXL: { reg8_inc(IXL); stack.invalidate_IX(); } break;
 		case INC_IYH: { reg8_inc(IYH); } break;
 		case INC_IYL: { reg8_inc(IYL); } break;
 		case DEC_A  : { reg8_dec(A  ); } break;
@@ -965,8 +996,8 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case DEC_E  : { reg8_dec(E  ); } break;
 		case DEC_H  : { reg8_dec(H  ); } break;
 		case DEC_L  : { reg8_dec(L  ); } break;
-		case DEC_IXH: { reg8_dec(IXH); } break;
-		case DEC_IXL: { reg8_dec(IXL); } break;
+		case DEC_IXH: { reg8_dec(IXH); stack.invalidate_IX(); } break;
+		case DEC_IXL: { reg8_dec(IXL); stack.invalidate_IX(); } break;
 		case DEC_IYH: { reg8_dec(IYH); } break;
 		case DEC_IYL: { reg8_dec(IYL); } break;
 
@@ -1210,12 +1241,12 @@ void current_state::next_instruction(ez80_instruction instruction) {
 
 		case PEA_IX: { pea_stack(get_IX(), imm_offset); } break;
 		case PEA_IY: { pea_stack(get_IY(), imm_offset); } break;
-		case PUSH_AF: { push_stack(get_AF()); } break;
-		case PUSH_BC: { push_stack(get_BC()); } break;
-		case PUSH_DE: { push_stack(get_DE()); } break;
-		case PUSH_HL: { push_stack(get_HL()); } break;
-		case PUSH_IX: { push_stack(get_IX()); } break;
-		case PUSH_IY: { push_stack(get_IY()); } break;
+		case PUSH_AF: { stack.push(get_AF()); } break;
+		case PUSH_BC: { stack.push(get_BC()); } break;
+		case PUSH_DE: { stack.push(get_DE()); } break;
+		case PUSH_HL: { stack.push(get_HL()); } break;
+		case PUSH_IX: { stack.push(get_IX()); } break;
+		case PUSH_IY: { stack.push(get_IY()); } break;
 
 		/* call */
 		case CALL_C:
@@ -1467,7 +1498,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case OUTI2:
 		case TSTIO:
 		case UNKNOWN: {
-			F.set_flags_unknown();
 			set_all_reg_unknown();
 		} break;
 	}

@@ -277,6 +277,9 @@ public:
 		T temp = ~mask;
 		return (temp == 0);
 	}
+	bool isunknown_fully() const {
+		return (mask == 0);
+	}
 	bool isknown_zero() const {
 		return (isknown_fully() && (bits == 0));
 	}
