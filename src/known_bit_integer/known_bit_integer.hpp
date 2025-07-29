@@ -19,7 +19,8 @@ template<typename T>
 known_bit_integer<T> complement(known_bit_integer<T> x) {
 	known_bit_integer<T> ret;
 	ret.bits = ~x.bits;
-	ret.mask &= x.mask;
+	ret.mask = x.mask;
+	ret.set_canonical();
 	return ret;
 }
 
@@ -59,7 +60,7 @@ known_bit_integer<T> bitwise_xor(known_bit_integer<T> x, known_bit_integer<T> y)
 //------------------------------------------------------------------------------
 
 template<typename T>
-known_bit_integer<T> shift_left_logical(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_left_logical(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_logical_in_range(shift)) {
 		return ret;
@@ -70,7 +71,7 @@ known_bit_integer<T> shift_left_logical(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-known_bit_integer<T> shift_right_logical(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_logical(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_logical_in_range(shift)) {
 		ret.set_unknown();
@@ -81,7 +82,7 @@ known_bit_integer<T> shift_right_logical(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-known_bit_integer<T> shift_left_ones(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_left_ones(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_ones_in_range(shift)) {
 		return ret;
@@ -91,7 +92,7 @@ known_bit_integer<T> shift_left_ones(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-known_bit_integer<T> shift_right_ones(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_ones(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_ones_in_range(shift)) {
 		return ret;
@@ -101,7 +102,7 @@ known_bit_integer<T> shift_right_ones(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-known_bit_integer<T> shift_left_unknown_bits(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_left_unknown_bits(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_ones_in_range(shift)) {
 		return ret;
@@ -111,7 +112,7 @@ known_bit_integer<T> shift_left_unknown_bits(known_bit_integer<T> x, int shift) 
 }
 
 template<typename T>
-known_bit_integer<T> shift_right_unknown_bits(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_unknown_bits(known_bit_integer<T> x, unsigned shift) {
 	known_bit_integer<T> ret;
 	if (!ret.shift_ones_in_range(shift)) {
 		return ret;
@@ -121,7 +122,7 @@ known_bit_integer<T> shift_right_unknown_bits(known_bit_integer<T> x, int shift)
 }
 
 template<typename T>
-known_bit_integer<T> shift_right_arithmetic(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_arithmetic(known_bit_integer<T> x, unsigned shift) {
 	bit_state sign = x.test_signbit();
 	if (sign == known_true) {
 		// negative
@@ -139,11 +140,11 @@ known_bit_integer<T> shift_right_arithmetic(known_bit_integer<T> x, int shift) {
 //------------------------------------------------------------------------------
 
 template<typename T>
-void rotate_left(known_bit_integer<T> x, int shift) {
+void rotate_left(known_bit_integer<T> x, unsigned shift) {
 	if (!x.rotate_in_range(shift)) {
 		return x;
 	}
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		// MSB becomes LSB
 		bit_state bit = x.test_signbit();
 		x = shift_left_logical(x, 1);
@@ -153,11 +154,11 @@ void rotate_left(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-void rotate_left_with_carry(known_bit_integer<T> x, int shift, bit_state& carry_inout) {
+void rotate_left_with_carry(known_bit_integer<T> x, unsigned shift, bit_state& carry_inout) {
 	if (!x.rotate_with_carry_in_range(shift)) {
 		return x;
 	}
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		// carry shifted into LSB
 		// MSB shifted out to carry
 		bit_state bit = x.test_signbit();
@@ -169,11 +170,11 @@ void rotate_left_with_carry(known_bit_integer<T> x, int shift, bit_state& carry_
 }
 
 template<typename T>
-void rotate_right(known_bit_integer<T> x, int shift) {
+void rotate_right(known_bit_integer<T> x, unsigned shift) {
 	if (!x.rotate_in_range(shift)) {
 		return x;
 	}
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		// LSB becomes MSB
 		bit_state bit = x.bit_test(0);
 		x = shift_right_logical(x, 1);
@@ -183,11 +184,11 @@ void rotate_right(known_bit_integer<T> x, int shift) {
 }
 
 template<typename T>
-void rotate_right_with_carry(known_bit_integer<T> x, int shift, bit_state& carry_inout) {
+void rotate_right_with_carry(known_bit_integer<T> x, unsigned shift, bit_state& carry_inout) {
 	if (!x.rotate_with_carry_in_range(shift)) {
 		return x;
 	}
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		// carry shifted into MSB
 		// LSB shifted out to carry
 		bit_state bit = x.bit_test(0);
@@ -284,13 +285,13 @@ known_bit_integer<T> absolute_value(known_bit_integer<T> x) {
 //------------------------------------------------------------------------------
 
 template<typename T>
-known_bit_integer<T> shift_right_ceil_unsigned(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_ceil_unsigned(known_bit_integer<T> x, unsigned shift) {
 	if (shift >= bit_width_of_type<T>()) {
 		x.set_to_zero_or_one(x.isknown_nonzero());
 		return x;
 	}
 	bit_state sticky_bits = known_false;
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		sticky_bits = or_bit_state(sticky_bits, x.bit_test(0));
 		x = shift_right_logical(x, 1);
 	}
@@ -299,11 +300,11 @@ known_bit_integer<T> shift_right_ceil_unsigned(known_bit_integer<T> x, int shift
 }
 
 template<typename T>
-known_bit_integer<T> shift_right_round_to_even_unsigned(known_bit_integer<T> x, int shift) {
+known_bit_integer<T> shift_right_round_to_even_unsigned(known_bit_integer<T> x, unsigned shift) {
 	shift = std::min(shift, bit_width_of_type<T>() + 1);
 	bit_state sticky_bits = known_false;
 	bit_state round_bit = known_false;
-	for (int i = 0; i < shift; i++) {
+	for (unsigned i = 0; i < shift; i++) {
 		sticky_bits = or_bit_state(sticky_bits, round_bit);
 		round_bit = x.bit_test(0);
 		x = shift_right_logical(x, 1);
@@ -320,7 +321,7 @@ known_bit_integer<T> shift_right_round_to_even_unsigned(known_bit_integer<T> x, 
 //------------------------------------------------------------------------------
 
 template<typename T>
-known_bit_integer<T> addition_with_carry_and_flags(
+known_bit_integer<T> add_with_carry_and_flags(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y,
 	bit_state& carry_inout,
@@ -345,7 +346,7 @@ known_bit_integer<T> addition_with_carry_and_flags(
 	flags.zero = ret.is_zero();
 	const bit_state sign_r = ret.test_signbit();
 	flags.sign = ret.test_signbit();
-	flags.overflow = arithmetic_flags::test_addition_overflow(sign_r, sign_x, sign_y);
+	flags.overflow = arithmetic_flags::test_add_overflow(sign_r, sign_x, sign_y);
 	if (x.isknown_zero() || y.isknown_zero()) {
 		flags.overflow = known_false;
 	}
@@ -354,26 +355,26 @@ known_bit_integer<T> addition_with_carry_and_flags(
 }
 
 template<typename T>
-known_bit_integer<T> addition_with_carry(
+known_bit_integer<T> add_with_carry(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y,
 	bit_state& carry_inout
 ) {
 	arithmetic_flags flags;
-	return addition_with_carry_and_flags(x, y, carry_inout, flags);
+	return add_with_carry_and_flags(x, y, carry_inout, flags);
 }
 
 template<typename T>
-known_bit_integer<T> addition(
+known_bit_integer<T> add(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y
 ) {
 	bit_state carry_inout = known_false;
-	return addition_with_carry_and_flags(x, y, carry_inout);
+	return add_with_carry(x, y, carry_inout);
 }
 
 template<typename T>
-known_bit_integer<T> subtract_with_carry_and_flags(
+known_bit_integer<T> sub_with_carry_and_flags(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y,
 	bit_state& carry_inout,
@@ -389,7 +390,7 @@ known_bit_integer<T> subtract_with_carry_and_flags(
 		// DIFF = X ^ Y ^ CIN
 		// COUT = X < (Y + C)
 		// COUT = (~X & Y) | (CIN & ~(X ^ Y))
-		x.bit_copy(i, xor_bit_state(X, Y, carry_inout));
+		ret.bit_copy(i, xor_bit_state(X, Y, carry_inout));
 		carry_inout = or_bit_state(
 			and_bit_state(invert_bit_state(X), Y),
 			and_bit_state(carry_inout, invert_bit_state(xor_bit_state(X, Y)))
@@ -408,22 +409,22 @@ known_bit_integer<T> subtract_with_carry_and_flags(
 }
 
 template<typename T>
-known_bit_integer<T> subtract_with_carry(
+known_bit_integer<T> sub_with_carry(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y,
 	bit_state& carry_inout
 ) {
 	arithmetic_flags flags;
-	return subtract_with_carry_and_flags(x, y, carry_inout, flags);
+	return sub_with_carry_and_flags(x, y, carry_inout, flags);
 }
 
 template<typename T>
-known_bit_integer<T> subtract(
+known_bit_integer<T> sub(
 	known_bit_integer<T> x,
 	known_bit_integer<T> y
 ) {
 	bit_state carry_inout = known_false;
-	return subtract_with_carry_and_flags(x, y, carry_inout);
+	return sub_with_carry(x, y, carry_inout);
 }
 
 //------------------------------------------------------------------------------
@@ -450,13 +451,13 @@ bit_state compare_notequal(known_bit_integer<T> x, known_bit_integer<T> y) {
 template<typename T>
 void compare(known_bit_integer<T> x, known_bit_integer<T> y, arithmetic_flags& flags) {
 	bit_state carry_inout = known_false;
-	subtract_with_carry_and_flags(x, y, carry_inout, flags);
+	sub_with_carry_and_flags(x, y, carry_inout, flags);
 }
 
 template<typename T>
 bit_state unsigned_less_than(known_bit_integer<T> x, known_bit_integer<T> y) {
 	arithmetic_flags flags;
-	unsigned_compare(x, y, flags);
+	compare(x, y, flags);
 	if (flags.carry == known_true) {
 		return known_true;
 	}
@@ -484,7 +485,7 @@ bit_state unsigned_less_equal(known_bit_integer<T> x, known_bit_integer<T> y) {
 template<typename T>
 bit_state signed_less_than(known_bit_integer<T> x, known_bit_integer<T> y) {
 	arithmetic_flags flags;
-	unsigned_compare(x, y, flags);
+	compare(x, y, flags);
 	bit_state is_less = xor_bit_state(flags.sign, flags.overflow);
 	if (is_less == known_true) {
 		return known_true;
@@ -515,20 +516,20 @@ bit_state signed_less_equal(known_bit_integer<T> x, known_bit_integer<T> y) {
 //------------------------------------------------------------------------------
 
 template<typename T>
-known_bit_integer<T> multiply(known_bit_integer<T> x, known_bit_integer<T> y) {
+known_bit_integer<T> mul(known_bit_integer<T> x, known_bit_integer<T> y) {
 	known_bit_integer<T> result;
 	result.set_to_zero();
 	for (size_t i = bit_width_of_type<T>(); i --> 0;) {
 		result = shift_left_logical(result, 1);
 		known_bit_integer<T> mult_mask;
 		mult_mask.set_to_zero_or_all_ones(y.bit_test(i));
-		result = addition(result, bitwise_and(mult_mask, x));
+		result = add(result, bitwise_and(mult_mask, x));
 	}
 	return result;
 }
 
 template<typename T>
-void multiply_hilo_unsigned(known_bit_integer<T>& hi, known_bit_integer<T>& lo, known_bit_integer<T> x, known_bit_integer<T> y) {
+void mul_hilo_unsigned(known_bit_integer<T>& hi, known_bit_integer<T>& lo, known_bit_integer<T> x, known_bit_integer<T> y) {
 	hi.set_to_zero();
 	lo.set_to_zero();
 	for (size_t i = bit_width_of_type<T>(); i --> 0;) {
@@ -540,21 +541,21 @@ void multiply_hilo_unsigned(known_bit_integer<T>& hi, known_bit_integer<T>& lo, 
 		known_bit_integer<T> mult_mask;
 		mult_mask.set_to_zero_or_all_ones(y.bit_test(i));
 		bit_state carry_inout = known_false;
-		lo = addition_with_carry(lo, bitwise_and(mult_mask, x), carry_inout);
+		lo = add_with_carry(lo, bitwise_and(mult_mask, x), carry_inout);
 		hi = increment_by_carry(hi, carry_inout);
 	}
 }
 
 template<typename T>
-known_bit_integer<T> multiply_hi_unsigned(known_bit_integer<T> x, known_bit_integer<T> y) {
+known_bit_integer<T> mul_hi_unsigned(known_bit_integer<T> x, known_bit_integer<T> y) {
 	known_bit_integer<T> hi, lo;
-	multiply_hilo_unsigned(hi, lo, x, y);
+	mul_hilo_unsigned(hi, lo, x, y);
 	return hi;
 }
 
 template<typename T>
-void multiply_hilo_signed(known_bit_integer<T>& hi, known_bit_integer<T>& lo, known_bit_integer<T> x, known_bit_integer<T> y) {
-	multiply_hilo_unsigned(hi, lo, absolute_value(x), absolute_value(y));
+void mul_hilo_signed(known_bit_integer<T>& hi, known_bit_integer<T>& lo, known_bit_integer<T> x, known_bit_integer<T> y) {
+	mul_hilo_unsigned(hi, lo, absolute_value(x), absolute_value(y));
 	bit_state sign = xor_bit_state(x.test_signbit(), y.test_signbit());
 	if (sign == known_false) {
 		return;
@@ -562,7 +563,7 @@ void multiply_hilo_signed(known_bit_integer<T>& hi, known_bit_integer<T>& lo, kn
 	known_bit_integer<T> neg_hi;
 	neg_hi = complement(hi);
 	neg_hi = increment_by_carry(neg_hi, lo.is_zero());
-	lo = multiply(x, y);
+	lo = mul(x, y);
 	if (sign == known_true) {
 		hi = neg_hi;
 		return;
@@ -571,9 +572,9 @@ void multiply_hilo_signed(known_bit_integer<T>& hi, known_bit_integer<T>& lo, kn
 }
 
 template<typename T>
-known_bit_integer<T> multiply_hi_signed(known_bit_integer<T> x, known_bit_integer<T> y) {
+known_bit_integer<T> mul_hi_signed(known_bit_integer<T> x, known_bit_integer<T> y) {
 	known_bit_integer<T> hi, lo;
-	multiply_hilo_signed(hi, lo, x, y);
+	mul_hilo_signed(hi, lo, x, y);
 	return hi;
 }
 
@@ -609,7 +610,7 @@ known_bit_integer<T> square(known_bit_integer<T> x) {
 	| 31: 110001
 	| 39: 111001
 	*/
-	known_bit_integer<T> ret = multiply(x, x);
+	known_bit_integer<T> ret = mul(x, x);
 	ret.bit_clear(1); // guaranteed to be zero
 	if (x.isknown_bit_set(0)) {
 		ret.bit_clear(2);
@@ -630,7 +631,7 @@ void square_hilo_unsigned(
 	known_bit_integer<T>& lo,
 	known_bit_integer<T> x
 ) {
-	multiply_hilo_unsigned(hi, lo, x, x);
+	mul_hilo_unsigned(hi, lo, x, x);
 	lo = square(x);
 }
 
@@ -648,7 +649,7 @@ void square_hilo_signed(
 	known_bit_integer<T> x
 ) {
 	known_bit_integer<T> x_abs = absolute_value(x);
-	multiply_hilo_unsigned(hi, lo, x_abs, x_abs);
+	mul_hilo_unsigned(hi, lo, x_abs, x_abs);
 	lo = square(x);
 	hi.bit_clear(hi.get_signbit_index());
 }
@@ -680,12 +681,12 @@ void divrem_trunc_unsigned(
 	quo.set_to_zero();
 	rem.set_to_zero();
 	for (size_t i = bit_width_of_type<T>(); i --> 0;) {
-		rem.shift_left_logical(1);
+		rem = shift_left_logical(rem, 1);
 		rem.bit_copy(0, num.bit_test(i));
 		bit_state rem_ge_den = unsigned_greater_equal(rem, den);
 		known_bit_integer<T> cmp_mask;
 		cmp_mask.set_to_zero_or_all_ones(rem_ge_den);
-		rem = subtract_ignore_carry(rem, (cmp_mask & den));
+		rem = sub(rem, (cmp_mask & den));
 		quo.bit_copy(i, rem_ge_den);
 	}
 	rem.set_known_unsigned_range(0, den.get_unsigned_maximum() - 1);
@@ -746,7 +747,7 @@ void divrem_floor_signed(
 	quo = decrement_by_carry(quo, modify_result);
 	known_bit_integer<T> den_mask;
 	den_mask.set_to_zero_or_all_ones(modify_result);
-	rem = addition(rem, (bitwise_and(den_mask, den)));
+	rem = add(rem, (bitwise_and(den_mask, den)));
 }
 
 template<typename T>
@@ -776,7 +777,7 @@ void divrem_euclidean_signed(
 	if (rem_lt_zero == known_false) {
 		return;
 	}
-	rem = addition(rem, conditional_negate(den, den_lt_zero));
+	rem = add(rem, conditional_negate(den, den_lt_zero));
 	quo = increment_if_true_decrement_if_false(quo, den_lt_zero);
 }
 
@@ -799,29 +800,29 @@ known_bit_integer<T> rem_euclidean_signed(known_bit_integer<T> num, known_bit_in
 //------------------------------------------------------------------------------
 
 template<typename T>
-void leading_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void leading_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	min_bound = std::countl_zero(x.get_unsigned_maximum());
 	max_bound = std::countl_zero(x.get_unsigned_minimum());
 }
 
 template<typename T>
-void leading_ones(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void leading_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	return leading_zeros(min_bound, max_bound, complement(x));
 }
 
 template<typename T>
-void trailing_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void trailing_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	min_bound = std::countr_zero(x.get_unsigned_maximum());
 	max_bound = std::countr_zero(x.get_unsigned_minimum());
 }
 
 template<typename T>
-void trailing_ones(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void trailing_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	return trailing_zeros(min_bound, max_bound, complement(x));
 }
 
 template<typename T>
-void first_leading_one(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void first_leading_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	min_bound = std::countl_zero(x.get_unsigned_minimum()) + 1;
 	max_bound = std::countl_zero(x.get_unsigned_maximum()) + 1;
 	if (x.get_unsigned_minimum() == 0) {
@@ -833,12 +834,12 @@ void first_leading_one(int& min_bound, int& max_bound, known_bit_integer<T> x) {
 }
 
 template<typename T>
-void first_leading_zero(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void first_leading_zero(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	return first_leading_one(min_bound, max_bound, complement(x));
 }
 
 template<typename T>
-void first_trailing_one(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void first_trailing_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	min_bound = std::countr_zero(x.get_unsigned_minimum()) + 1;
 	max_bound = std::countr_zero(x.get_unsigned_maximum()) + 1;
 	if (x.get_unsigned_minimum() == 0) {
@@ -850,18 +851,18 @@ void first_trailing_one(int& min_bound, int& max_bound, known_bit_integer<T> x) 
 }
 
 template<typename T>
-void first_trailing_zero(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void first_trailing_zero(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	return first_trailing_one(min_bound, max_bound, complement(x));
 }
 
 template<typename T>
-void count_ones(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void count_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	min_bound = std::popcount(x.get_unsigned_minimum());
 	max_bound = std::popcount(x.get_unsigned_maximum());
 }
 
 template<typename T>
-void count_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void count_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	return count_ones(min_bound, max_bound, complement(x));
 }
 
@@ -873,7 +874,7 @@ bit_state has_single_bit(known_bit_integer<T> x) {
 }
 
 template<typename T>
-void bit_width(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void bit_width(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	leading_zeros(min_bound, max_bound, x);
 	min_bound = bit_width_of_type<T>() - min_bound;
 	max_bound = bit_width_of_type<T>() - max_bound;
@@ -891,7 +892,7 @@ known_bit_integer<T> bit_floor(known_bit_integer<T> x) {
 		ret.set_unknown();
 		return ret;
 	}
-	int min_bound, max_bound;
+	unsigned min_bound, max_bound;
 	bit_width(min_bound, max_bound, x);
 	min_bound--;
 	max_bound--;
@@ -917,7 +918,7 @@ known_bit_integer<T> bit_ceil(known_bit_integer<T> x) {
 		ret.set_unknown();
 		return ret;
 	}
-	int min_bound, max_bound;
+	unsigned min_bound, max_bound;
 	bit_width(min_bound, max_bound, decrement(x));
 	min_bound--;
 	max_bound--;
@@ -936,7 +937,7 @@ known_bit_integer<T> bit_ceil(known_bit_integer<T> x) {
 
 template<typename T>
 bit_state is_pairity_even(known_bit_integer<T> x) {
-	int min_bound, max_bound;
+	unsigned min_bound, max_bound;
 	count_ones(min_bound, max_bound, x);
 	if (min_bound == max_bound) {
 		return ((min_bound & 1) == 0) ? known_true : known_false;
@@ -950,7 +951,7 @@ bit_state is_pairity_odd(known_bit_integer<T> x) {
 }
 
 template<typename T>
-void leading_signbits(int& min_bound, int& max_bound, known_bit_integer<T> x) {
+void leading_signbits(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
 	bit_state sign = x.test_signbit();
 	if (sign == known_true) {
 		leading_ones(min_bound, max_bound, x);
@@ -960,8 +961,8 @@ void leading_signbits(int& min_bound, int& max_bound, known_bit_integer<T> x) {
 		leading_zeros(min_bound, max_bound, x);
 		return;
 	}
-	int min_pos_bound, max_pos_bound;
-	int min_neg_bound, max_neg_bound;
+	unsigned min_pos_bound, max_pos_bound;
+	unsigned min_neg_bound, max_neg_bound;
 	known_bit_integer<T> pos = x;
 	known_bit_integer<T> neg = x;
 	pos.bit_clear(pos.get_signbit_index());

@@ -159,7 +159,7 @@ struct arithmetic_flags {
 	bit_state overflow;
 	bit_state parity_even;
 
-	static bit_state test_addition_overflow(bit_state result, bit_state x, bit_state y) {
+	static bit_state test_add_overflow(bit_state result, bit_state x, bit_state y) {
 		/*
 		Signed Overflow Truth Table
 		Overflow occurs when (pos + pos = neg) or (neg + neg = pos)
@@ -214,17 +214,17 @@ struct arithmetic_flags {
 		return unknown;
 	}
 	static bit_state test_subtraction_overflow(bit_state result, bit_state x, bit_state y) {
-		return test_addition_overflow(result, x, invert_bit_state(y));
+		return test_add_overflow(result, x, invert_bit_state(y));
 	}
 };
 
 template<typename T>
 class known_bit_integer {
-private:
+public:
 	T bits;
 	T mask;
 
-	T get_bit_mask(int b) const {
+	T get_bit_mask(unsigned b) const {
 		if (b < bit_width_of_type<T>()) {
 			return (static_cast<T>(1) << b);
 		}
@@ -234,12 +234,14 @@ private:
 
 public:
 
-	T get_raw_bits() const {
+	T& get_bits_raw() {
 		return bits;
 	}
-	T get_raw_mask() const {
+
+	T& get_mask_raw() {
 		return mask;
 	}
+
 	void set_raw_bits(T b) {
 		bits = b;
 	}
@@ -286,7 +288,6 @@ public:
 	known_bit_integer() {
 		set_unknown();
 	}
-
 
 	bool isknown_fully() const {
 		T temp = ~mask;
@@ -360,7 +361,7 @@ public:
 
 	/* bit operations */
 
-	bit_state bit_test(int b) const {
+	bit_state bit_test(unsigned b) const {
 		const T index = get_bit_mask(b);
 		if (mask & index) {
 			return (bits & index) ? known_true : known_false;
@@ -368,48 +369,48 @@ public:
 		return unknown;
 	}
 
-	bool isknown_bit(int b) const {
+	bool isknown_bit(unsigned b) const {
 		return (bit_test(b) != unknown);
 	}
-	bool isknown_bit_set(int b) const {
+	bool isknown_bit_set(unsigned b) const {
 		return (bit_test(b) == known_true);
 	}
-	bool isknown_bit_clear(int b) const {
+	bool isknown_bit_clear(unsigned b) const {
 		return (bit_test(b) == known_false);
 	}
 
-	void bit_set(int b) {
+	void bit_set(unsigned b) {
 		const T index = get_bit_mask(b);
 		mask |= index; // bit is known
 		bits |= index; // set bit
 	}
-	void bit_clear(int b) {
+	void bit_clear(unsigned b) {
 		const T index = get_bit_mask(b);
 		mask |= index; // bit is known
 		bits &= ~index; // clear bit
 	}
-	void bit_flip(int b) {
+	void bit_flip(unsigned b) {
 		const T index = get_bit_mask(b);
 		bits ^= index; // flip bit
 		bits &= mask; // canonicalize
 	}
-	void bit_unknown(int b) {
+	void bit_unknown(unsigned b) {
 		const T index = get_bit_mask(b);
 		mask &= ~index; // bit is unknown
 		bits &= ~index; // canonicalize to zero
 	}
-	void bit_copy(int b, bit_state f) {
+	void bit_copy(unsigned b, bit_state f) {
 		switch (f) {
 			case unknown: bit_unknown(b); return;
 			case known_true: bit_set(b); return;
 			case known_false: bit_clear(b); return;
 		}
 	}
-	void bit_copy(int b, bool f) {
+	void bit_copy(unsigned b, bool f) {
 		bit_copy(b, set_bit_state(f));
 	}
 
-	void bit_copy_if_unknown(int b, bit_state f) {
+	void bit_copy_if_unknown(unsigned b, bit_state f) {
 		if (bit_test(b) != unknown) {
 			return;
 		}
@@ -419,10 +420,9 @@ public:
 			case known_false: bit_clear(b); return;
 		}
 	}
-	void bit_copy_if_unknown(int b, bool f) {
+	void bit_copy_if_unknown(unsigned b, bool f) {
 		bit_copy(b, set_bit_state(f));
 	}
-
 
 	/* set to bit */
 
@@ -483,448 +483,13 @@ public:
 		}
 	}
 
-	constexpr int get_signbit_index() const {
+	constexpr unsigned get_signbit_index() const {
 		return (bit_width_of_type<T>() - 1);
 	}
 
 	bit_state test_signbit() const {
 		return bit_test(get_signbit_index());
 	}
-
-
-/* bitwise operations */
-
-//------------------------------------------------------------------------------
-// Undefined Behaviour
-//------------------------------------------------------------------------------
-
-private:
-
-/**
- * @brief Validates and corrects the shift amount. You may implement your own
- * custom behavior here.
- * @return `true` if the calling function shall proceed. `false` if it should abort.
- */
-bool shift_logical_in_range(uint8_t& shift) {
-	if (shift < bit_width_of_type<T>()) {
-		return true;
-	}
-	#if 1
-		// default to unknown
-		set_unknown();
-		return false;
-	#elif 0
-		// special case for shift == bit_width
-		if (shift == bit_width_of_type<T>()) {
-			set_to_zero();
-		} else {
-			set_unknown();
-		}
-		return false;
-	#else
-		// modulo shift amount
-		shift %= bit_width_of_type<T>();
-		return true;
-	#endif
-}
-
-/**
- * @brief Validates and corrects the shift amount. You may implement your own
- * custom behavior here.
- * @return `true` if the calling function shall proceed. `false` if it should abort.
- */
-bool shift_ones_in_range(uint8_t& shift) {
-	if (shift < bit_width_of_type<T>()) {
-		return true;
-	}
-	#if 1
-		// default to unknown
-		set_unknown();
-		return false;
-	#elif 0
-		// special case for shift == bit_width
-		if (shift == bit_width_of_type<T>()) {
-			set_to_all_ones();
-		} else {
-			set_unknown();
-		}
-		return false;
-	#else
-		// modulo shift amount
-		shift %= bit_width_of_type<T>();
-		return true;
-	#endif
-}
-
-/**
- * @brief Validates and corrects the shift amount. You may implement your own
- * custom behavior here.
- * @return `true` if the calling function shall proceed. `false` if it should abort.
- */
-bool shift_unknown_bits_in_range(uint8_t& shift) {
-	if (shift < bit_width_of_type<T>()) {
-		return true;
-	}
-	#if 1
-		// default to unknown
-		set_unknown();
-		return false;
-	#else
-		// modulo shift amount
-		shift %= bit_width_of_type<T>();
-		return true;
-	#endif
-}
-
-/**
- * @brief Validates and corrects the shift amount. You may implement your own
- * custom behavior here.
- * @return `true` if the calling function shall proceed. `false` if it should abort.
- */
-bool rotate_in_range(uint8_t& shift) {
-	if (shift < bit_width_of_type<T>()) {
-		return true;
-	}
-	#if 1
-		// default to unknown
-		set_unknown();
-		return false;
-	#else
-		// modulo shift amount
-		shift %= bit_width_of_type<T>();
-		return true;
-	#endif
-}
-
-/**
- * @brief Validates and corrects the shift amount. You may implement your own
- * custom behavior here.
- * @return `true` if the calling function shall proceed. `false` if it should abort.
- */
-bool rotate_with_carry_in_range(uint8_t& shift) {
-	// the carry adds an additional bit that will be shifted
-	constexpr uint8_t bits_that_can_be_shifted = (bit_width_of_type<T>() + 1);
-	if (shift < bits_that_can_be_shifted) {
-		return true;
-	}
-	#if 1
-		// default to unknown
-		set_unknown();
-		return false;
-	#else
-		// modulo shift amount
-		shift %= bits_that_can_be_shifted;
-		return true;
-	#endif
-}
-
-public:
-
-/* bitwise operations */
-
-known_bit_integer<T> friend complement(known_bit_integer<T> x);
-
-known_bit_integer<T> friend bitwise_and(known_bit_integer<T> x, known_bit_integer<T> y);
-
-known_bit_integer<T> friend bitwise_or(known_bit_integer<T> x, known_bit_integer<T> y);
-
-known_bit_integer<T> friend bitwise_xor(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-known_bit_integer<T> friend shift_left_logical(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_right_logical(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_left_ones(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_right_ones(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_left_unknown_bits(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_right_unknown_bits(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_right_arithmetic(known_bit_integer<T> x, int shift);
-
-/* rotates */
-
-known_bit_integer<T> friend rotate_left(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend rotate_right(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend rotate_left_with_carry(known_bit_integer<T> x, bit_state& carry_inout, int shift);
-
-known_bit_integer<T> friend rotate_right_with_carry(known_bit_integer<T> x, bit_state& carry_inout, int shift);
-
-/* rounding */
-
-known_bit_integer<T> friend shift_right_round_to_even_unsigned(known_bit_integer<T> x, int shift);
-
-known_bit_integer<T> friend shift_right_ceil_unsigned(known_bit_integer<T> x, int shift);
-
-/* addition and subtraction */
-
-known_bit_integer<T> friend increment_by_carry(known_bit_integer<T> x, bit_state carry);
-
-known_bit_integer<T> friend decrement_by_carry(known_bit_integer<T> x, bit_state carry);
-
-known_bit_integer<T> friend increment(known_bit_integer<T> x);
-
-known_bit_integer<T> friend decrement(known_bit_integer<T> x);
-
-known_bit_integer<T> friend negate(known_bit_integer<T> x);
-
-known_bit_integer<T> friend decrement_if_true_increment_if_false(known_bit_integer<T> x, bit_state cond);
-
-known_bit_integer<T> friend increment_if_true_decrement_if_false(known_bit_integer<T> x, bit_state cond);
-
-known_bit_integer<T> friend conditional_negate(known_bit_integer<T> x, bit_state cond);
-
-known_bit_integer<T> friend absolute_value(known_bit_integer<T> x);
-
-known_bit_integer<T> friend addition_with_carry_and_flags(
-	known_bit_integer<T> x,
-	known_bit_integer<T> y,
-	bit_state& carry_inout,
-	arithmetic_flags& flags
-);
-
-known_bit_integer<T> friend addition_with_carry(
-	known_bit_integer<T> x,
-	known_bit_integer<T> y,
-	bit_state& carry_inout
-);
-
-known_bit_integer<T> friend addition(known_bit_integer<T> x, known_bit_integer<T> y);
-
-known_bit_integer<T> friend subtract_with_carry_and_flags(
-	known_bit_integer<T> x,
-	known_bit_integer<T> y,
-	bit_state& carry_inout,
-	arithmetic_flags& flags
-);
-
-known_bit_integer<T> friend subtract_with_carry(
-	known_bit_integer<T> x,
-	known_bit_integer<T> y,
-	bit_state& carry_inout
-);
-
-known_bit_integer<T> friend subtract(known_bit_integer<T> x, known_bit_integer<T> y);
-
-/* compare */
-
-bit_state friend compare_equal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-bit_state friend compare_notequal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-void friend unsigned_compare(known_bit_integer<T> x, known_bit_integer<T> y, arithmetic_flags& flags);
-
-
-void friend signed_compare(known_bit_integer<T> x, known_bit_integer<T> y, arithmetic_flags& flags);
-
-
-bit_state friend unsigned_less_than(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend unsigned_less_equal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend unsigned_greater_than(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend signed_greater_equal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend signed_less_than(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend signed_less_equal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend signed_greater_than(known_bit_integer<T> x, known_bit_integer<T> y);
-
-
-bit_state friend signed_greater_equal(known_bit_integer<T> x, known_bit_integer<T> y);
-
-/* multiplication */
-
-known_bit_integer<T> friend multiply(known_bit_integer<T> x, known_bit_integer<T> y);
-
-void friend multiply_hilo_unsigned(
-	known_bit_integer<T>& hi,
-	known_bit_integer<T>& lo,
-	known_bit_integer<T> x,
-	known_bit_integer<T> y
-);
-
-void friend multiply_hilo_signed(
-	known_bit_integer<T>& hi,
-	known_bit_integer<T>& lo,
-	known_bit_integer<T> x,
-	known_bit_integer<T> y
-);
-
-/**
- * @brief Uses the knowledge that x == y to resolve a few more known bits.
- * For example, all squared integers have bit 1 cleared.
- */
-known_bit_integer<T> friend square(known_bit_integer<T> x);
-
-void friend square_hilo_unsigned(
-	known_bit_integer<T>& hi,
-	known_bit_integer<T>& lo,
-	known_bit_integer<T> x
-);
-
-void friend square_hilo_signed(
-	known_bit_integer<T>& hi,
-	known_bit_integer<T>& lo,
-	known_bit_integer<T> x
-);
-
-/* division and remainder */
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend divrem_trunc_unsigned(
-	known_bit_integer<T>& quo,
-	known_bit_integer<T>& rem,
-	known_bit_integer<T> num,
-	known_bit_integer<T> den
-);
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend divrem_trunc_signed(
-	known_bit_integer<T>& quo,
-	known_bit_integer<T>& rem,
-	known_bit_integer<T> num,
-	known_bit_integer<T> den
-);
-
-known_bit_integer<T> friend divrem_floor_signed(
-	known_bit_integer<T>& quo,
-	known_bit_integer<T>& rem,
-	known_bit_integer<T> num,
-	known_bit_integer<T> den
-);
-
-known_bit_integer<T> friend divrem_euclidean_signed(
-	known_bit_integer<T>& quo,
-	known_bit_integer<T>& rem,
-	known_bit_integer<T> num,
-	known_bit_integer<T> den
-);
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend div_trunc_unsigned(known_bit_integer<T> num, known_bit_integer<T> den);
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend rem_trunc_unsigned(known_bit_integer<T> num, known_bit_integer<T> den);
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend div_trunc_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-/** @brief Same as C99/C++11 */
-known_bit_integer<T> friend rem_trunc_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-known_bit_integer<T> friend div_floor_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-known_bit_integer<T> friend rem_floor_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-known_bit_integer<T> friend div_euclidean_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-known_bit_integer<T> friend rem_euclidean_signed(known_bit_integer<T> num, known_bit_integer<T> den);
-
-/* C23 <stdbit.h> */
-
-/**
- * @brief similar to __builtin_clz/stdc_leading_zeros/std::countl_zero
- */
-void friend leading_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_leading_ones/std::countl_one
- */
-void friend leading_ones(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to __builtin_ctz/stdc_trailing_zeros/std::countr_zero
- */
-void friend trailing_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_trailing_ones/std::countr_one
- */
-void friend trailing_ones(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_first_leading_zero
- */
-void friend first_leading_zero(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_first_leading_one
- */
-void friend first_leading_one(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_first_trailing_zero
- */
-void friend first_trailing_zero(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to __builtin_ffs/stdc_first_trailing_one
- */
-void friend first_trailing_one(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_count_zeros
- */
-void friend count_zeros(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_count_ones/std::popcount
- */
-void friend count_ones(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_has_single_bit/std::has_single_bit
- */
-bit_state friend has_single_bit(known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_bit_width/std::bit_width
- */
-void friend bit_width(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-/**
- * @brief similar to stdc_bit_floor/std::bit_floor
- */
-known_bit_integer<T> friend bit_floor(known_bit_integer<T> x);
-
-/**
- * @brief follows C23 stdc_bit_ceil, which returns zero if the result does not
- * fit the return type. C++20 std::bit_ceil leaves this behaviour undefined.
- */
-known_bit_integer<T> friend bit_ceil(known_bit_integer<T> x);
-
-/* other functions */
-
-known_bit_integer<T> friend swap_byte_order(known_bit_integer<T> x);
-
-/**
- * @brief similar to __builtin_bitreverse
- */
-known_bit_integer<T> friend reverse_bits(known_bit_integer<T> x);
-
-/**
- * @brief similar to __builtin_clrsb (count leading redundant sign bits)
- */
-void friend leading_signbits(int& min_bound, int& max_bound, known_bit_integer<T> x);
-
-bit_state friend is_pairity_even(known_bit_integer<T> x);
-
-bit_state friend is_pairity_odd(known_bit_integer<T> x);
 
 //------------------------------------------------------------------------------
 // Merge bits
@@ -1063,7 +628,591 @@ bool isknown_greater_equal_zero() const {
 	return isknown_true(is_greater_equal_zero());
 }
 
+//------------------------------------------------------------------------------
+// Undefined Behaviour
+//------------------------------------------------------------------------------
+
+
+/**
+ * @brief Validates and corrects the shift amount. You may implement your own
+ * custom behavior here.
+ * @return `true` if the calling function shall proceed. `false` if it should abort.
+ */
+bool shift_logical_in_range(unsigned& shift) {
+	if (shift < bit_width_of_type<T>()) {
+		return true;
+	}
+	#if 1
+		// default to unknown
+		set_unknown();
+		return false;
+	#elif 0
+		// special case for shift == bit_width
+		if (shift == bit_width_of_type<T>()) {
+			set_to_zero();
+		} else {
+			set_unknown();
+		}
+		return false;
+	#else
+		// modulo shift amount
+		shift %= bit_width_of_type<T>();
+		return true;
+	#endif
+}
+
+/**
+ * @brief Validates and corrects the shift amount. You may implement your own
+ * custom behavior here.
+ * @return `true` if the calling function shall proceed. `false` if it should abort.
+ */
+bool shift_ones_in_range(unsigned& shift) {
+	if (shift < bit_width_of_type<T>()) {
+		return true;
+	}
+	#if 1
+		// default to unknown
+		set_unknown();
+		return false;
+	#elif 0
+		// special case for shift == bit_width
+		if (shift == bit_width_of_type<T>()) {
+			set_to_all_ones();
+		} else {
+			set_unknown();
+		}
+		return false;
+	#else
+		// modulo shift amount
+		shift %= bit_width_of_type<T>();
+		return true;
+	#endif
+}
+
+/**
+ * @brief Validates and corrects the shift amount. You may implement your own
+ * custom behavior here.
+ * @return `true` if the calling function shall proceed. `false` if it should abort.
+ */
+bool shift_unknown_bits_in_range(unsigned& shift) {
+	if (shift < bit_width_of_type<T>()) {
+		return true;
+	}
+	#if 1
+		// default to unknown
+		set_unknown();
+		return false;
+	#else
+		// modulo shift amount
+		shift %= bit_width_of_type<T>();
+		return true;
+	#endif
+}
+
+/**
+ * @brief Validates and corrects the shift amount. You may implement your own
+ * custom behavior here.
+ * @return `true` if the calling function shall proceed. `false` if it should abort.
+ */
+bool rotate_in_range(unsigned& shift) {
+	if (shift < bit_width_of_type<T>()) {
+		return true;
+	}
+	#if 1
+		// default to unknown
+		set_unknown();
+		return false;
+	#else
+		// modulo shift amount
+		shift %= bit_width_of_type<T>();
+		return true;
+	#endif
+}
+
+/**
+ * @brief Validates and corrects the shift amount. You may implement your own
+ * custom behavior here.
+ * @return `true` if the calling function shall proceed. `false` if it should abort.
+ */
+bool rotate_with_carry_in_range(unsigned& shift) {
+	// the carry adds an additional bit that will be shifted
+	constexpr unsigned bits_that_can_be_shifted = (bit_width_of_type<T>() + 1);
+	if (shift < bits_that_can_be_shifted) {
+		return true;
+	}
+	#if 1
+		// default to unknown
+		set_unknown();
+		return false;
+	#else
+		// modulo shift amount
+		shift %= bits_that_can_be_shifted;
+		return true;
+	#endif
+}
+
 };
+
+/* bitwise operations */
+
+
+/* bitwise operations */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ complement(known_bit_integer<T> x);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ bitwise_and(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ bitwise_or(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ bitwise_xor(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_left_logical(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_logical(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_left_ones(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_ones(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_left_unknown_bits(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_unknown_bits(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_arithmetic(known_bit_integer<T> x, unsigned shift);
+
+/* rotates */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rotate_left(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rotate_right(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rotate_left_with_carry(known_bit_integer<T> x, bit_state& carry_inout, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rotate_right_with_carry(known_bit_integer<T> x, bit_state& carry_inout, unsigned shift);
+
+/* rounding */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_round_to_even_unsigned(known_bit_integer<T> x, unsigned shift);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ shift_right_ceil_unsigned(known_bit_integer<T> x, unsigned shift);
+
+/* addition and subtraction */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ increment_by_carry(known_bit_integer<T> x, bit_state carry);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ decrement_by_carry(known_bit_integer<T> x, bit_state carry);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ increment(known_bit_integer<T> x);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ decrement(known_bit_integer<T> x);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ negate(known_bit_integer<T> x);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ decrement_if_true_increment_if_false(known_bit_integer<T> x, bit_state cond);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ increment_if_true_decrement_if_false(known_bit_integer<T> x, bit_state cond);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ conditional_negate(known_bit_integer<T> x, bit_state cond);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ absolute_value(known_bit_integer<T> x);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ add_with_carry_and_flags(
+	known_bit_integer<T> x,
+	known_bit_integer<T> y,
+	bit_state& carry_inout,
+	arithmetic_flags& flags
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ add_with_carry(
+	known_bit_integer<T> x,
+	known_bit_integer<T> y,
+	bit_state& carry_inout
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ add(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ sub_with_carry_and_flags(
+	known_bit_integer<T> x,
+	known_bit_integer<T> y,
+	bit_state& carry_inout,
+	arithmetic_flags& flags
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ sub_with_carry(
+	known_bit_integer<T> x,
+	known_bit_integer<T> y,
+	bit_state& carry_inout
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ subtract(known_bit_integer<T> x, known_bit_integer<T> y);
+
+/* compare */
+
+template<typename T>
+bit_state /*friend*/ compare_equal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ compare_notequal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+void /*friend*/ unsigned_compare(known_bit_integer<T> x, known_bit_integer<T> y, arithmetic_flags& flags);
+
+template<typename T>
+void /*friend*/ signed_compare(known_bit_integer<T> x, known_bit_integer<T> y, arithmetic_flags& flags);
+
+template<typename T>
+bit_state /*friend*/ unsigned_less_than(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ unsigned_less_equal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ unsigned_greater_than(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ unsigned_greater_equal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ signed_less_than(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ signed_less_equal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ signed_greater_than(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+bit_state /*friend*/ signed_greater_equal(known_bit_integer<T> x, known_bit_integer<T> y);
+
+/* multiplication */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ mul(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+void /*friend*/ mul_hilo_unsigned(
+	known_bit_integer<T>& hi,
+	known_bit_integer<T>& lo,
+	known_bit_integer<T> x,
+	known_bit_integer<T> y
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ mul_hi_unsigned(known_bit_integer<T> x, known_bit_integer<T> y);
+
+template<typename T>
+void /*friend*/ mul_hilo_signed(
+	known_bit_integer<T>& hi,
+	known_bit_integer<T>& lo,
+	known_bit_integer<T> x,
+	known_bit_integer<T> y
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ mul_hi_signed(known_bit_integer<T> x, known_bit_integer<T> y);
+
+/**
+ * @brief Uses the knowledge that x == y to resolve a few more known bits.
+ * For example, all squared integers have bit 1 cleared.
+ */
+template<typename T>
+known_bit_integer<T> /*friend*/ square(known_bit_integer<T> x);
+
+template<typename T>
+void /*friend*/ square_hilo_unsigned(
+	known_bit_integer<T>& hi,
+	known_bit_integer<T>& lo,
+	known_bit_integer<T> x
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ square_hi_unsigned(known_bit_integer<T> x);
+
+template<typename T>
+void /*friend*/ square_hilo_signed(
+	known_bit_integer<T>& hi,
+	known_bit_integer<T>& lo,
+	known_bit_integer<T> x
+);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ square_hi_signed(known_bit_integer<T> x);
+
+/* division and remainder */
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+void /*friend*/ divrem_trunc_unsigned(
+	known_bit_integer<T>& quo,
+	known_bit_integer<T>& rem,
+	known_bit_integer<T> num,
+	known_bit_integer<T> den
+);
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+void /*friend*/ divrem_trunc_signed(
+	known_bit_integer<T>& quo,
+	known_bit_integer<T>& rem,
+	known_bit_integer<T> num,
+	known_bit_integer<T> den
+);
+
+template<typename T>
+void /*friend*/ divrem_floor_signed(
+	known_bit_integer<T>& quo,
+	known_bit_integer<T>& rem,
+	known_bit_integer<T> num,
+	known_bit_integer<T> den
+);
+
+template<typename T>
+void /*friend*/ divrem_euclidean_signed(
+	known_bit_integer<T>& quo,
+	known_bit_integer<T>& rem,
+	known_bit_integer<T> num,
+	known_bit_integer<T> den
+);
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+known_bit_integer<T> /*friend*/ div_trunc_unsigned(known_bit_integer<T> num, known_bit_integer<T> den);
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+known_bit_integer<T> /*friend*/ rem_trunc_unsigned(known_bit_integer<T> num, known_bit_integer<T> den);
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+known_bit_integer<T> /*friend*/ div_trunc_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+/** @brief Same as C99/C++11 */
+template<typename T>
+known_bit_integer<T> /*friend*/ rem_trunc_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ div_floor_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rem_floor_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ div_euclidean_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+template<typename T>
+known_bit_integer<T> /*friend*/ rem_euclidean_signed(known_bit_integer<T> num, known_bit_integer<T> den);
+
+/* C23 <stdbit.h> */
+
+/**
+ * @brief similar to __builtin_clz/stdc_leading_zeros/std::countl_zero
+ */
+template<typename T>
+void /*friend*/ leading_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_leading_ones/std::countl_one
+ */
+template<typename T>
+void /*friend*/ leading_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to __builtin_ctz/stdc_trailing_zeros/std::countr_zero
+ */
+template<typename T>
+void /*friend*/ trailing_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_trailing_ones/std::countr_one
+ */
+template<typename T>
+void /*friend*/ trailing_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_first_leading_zero
+ */
+template<typename T>
+void /*friend*/ first_leading_zero(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_first_leading_one
+ */
+template<typename T>
+void /*friend*/ first_leading_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_first_trailing_zero
+ */
+template<typename T>
+void /*friend*/ first_trailing_zero(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to __builtin_ffs/stdc_first_trailing_one
+ */
+template<typename T>
+void /*friend*/ first_trailing_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_count_zeros
+ */
+template<typename T>
+void /*friend*/ count_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_count_ones/std::popcount
+ */
+template<typename T>
+void /*friend*/ count_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_has_single_bit/std::has_single_bit
+ */
+template<typename T>
+bit_state /*friend*/ has_single_bit(known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_bit_width/std::bit_width
+ */
+template<typename T>
+void /*friend*/ bit_width(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+/**
+ * @brief similar to stdc_bit_floor/std::bit_floor
+ */
+template<typename T>
+known_bit_integer<T> /*friend*/ bit_floor(known_bit_integer<T> x);
+
+/**
+ * @brief follows C23 stdc_bit_ceil, which returns zero if the result does not
+ * fit the return type. C++20 std::bit_ceil leaves this behaviour undefined.
+ */
+template<typename T>
+known_bit_integer<T> /*friend*/ bit_ceil(known_bit_integer<T> x);
+
+/* other functions */
+
+template<typename T>
+known_bit_integer<T> /*friend*/ swap_byte_order(known_bit_integer<T> x);
+
+/**
+ * @brief similar to __builtin_bitreverse
+ */
+template<typename T>
+known_bit_integer<T> /*friend*/ reverse_bits(known_bit_integer<T> x);
+
+/**
+ * @brief similar to __builtin_clrsb (count leading redundant sign bits)
+ */
+template<typename T>
+void /*friend*/ leading_signbits(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x);
+
+template<typename T>
+bit_state /*friend*/ is_pairity_even(known_bit_integer<T> x);
+
+template<typename T>
+bit_state /*friend*/ is_pairity_odd(known_bit_integer<T> x);
+
+//------------------------------------------------------------------------------
+// operator overloads
+//------------------------------------------------------------------------------
+
+template<typename T>
+known_bit_integer<T> operator~(const known_bit_integer<T>& x) {
+	return complement(x);
+}
+
+template<typename T>
+known_bit_integer<T> operator&(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return bitwise_and(x, y);
+}
+
+template<typename T>
+known_bit_integer<T> operator|(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return bitwise_or(x, y);
+}
+
+template<typename T>
+known_bit_integer<T> operator^(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return bitwise_xor(x, y);
+}
+
+template<typename T>
+known_bit_integer<T> operator-(const known_bit_integer<T>& x) {
+	return negate(x);
+}
+
+template<typename T>
+known_bit_integer<T>& operator++(known_bit_integer<T>& x) {
+	x = increment(x);
+	return x;
+}
+
+template<typename T>
+known_bit_integer<T> operator++(known_bit_integer<T>& x, int) {
+	known_bit_integer<T> ret = x;
+	++x;
+	return ret;
+}
+
+template<typename T>
+known_bit_integer<T>& operator--(known_bit_integer<T>& x) {
+	x = decrement(x);
+	return x;
+}
+
+template<typename T>
+known_bit_integer<T> operator--(known_bit_integer<T>& x, int) {
+	known_bit_integer<T> ret = x;
+	--x;
+	return ret;
+}
+
+template<typename T>
+known_bit_integer<T> operator+(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return add(x, y);
+}
+
+template<typename T>
+known_bit_integer<T> operator-(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return sub(x, y);
+}
+
+template<typename T>
+known_bit_integer<T> operator*(const known_bit_integer<T>& x, const known_bit_integer<T>& y) {
+	return mul(x, y);
+}
 
 } // namespace kbi
 

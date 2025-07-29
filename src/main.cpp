@@ -39,6 +39,7 @@ int main(void) {
 	if (test_reg_pair() == false) {
 		printf("Failed tests\n");
 	}
+	return 0;
 	char const * const input_path = "../input/input_asm.src";
 	char const * const output_path = "../output/output_asm.src";
 	printf("asm parse\n");
