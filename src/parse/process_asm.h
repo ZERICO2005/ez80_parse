@@ -6,6 +6,14 @@
 #include "../text.h"
 #include "../text_util.h"
 
+
+void clean_symbol_str(string& str) {
+	if (str.front() == '(' && str.back() == ')') {
+		str.erase(std::remove(str.begin(), str.end(), '('), str.end());
+		str.erase(std::remove(str.begin(), str.end(), ')'), str.end());
+	}
+}
+
 void set_index_register_offset(ez80_instruction& output, const vector<string>& str, size_t offset) {
 	if (offset >= str.size()) {
 		if (offset == str.size()) {
@@ -20,6 +28,7 @@ void set_index_register_offset(ez80_instruction& output, const vector<string>& s
 	if (str_start == str_end) {
 		output.known_value = false;
 		output.symbol = str_start;
+		clean_symbol_str(output.symbol);
 		return;
 	}
 	output.known_value = true;
@@ -36,6 +45,7 @@ void set_imm_value(ez80_instruction& output, const vector<string>& str, size_t o
 	if (str_start == str_end) {
 		output.known_value = false;
 		output.symbol = str_start;
+		clean_symbol_str(output.symbol);
 		return;
 	}
 	output.known_value = true;

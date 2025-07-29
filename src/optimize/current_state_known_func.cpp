@@ -156,6 +156,16 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 	using enum ez80_known_function;
 	using enum ez80_op_code;
 	using enum bit_state;
+	if (func == __setflag) {
+		if (F.isknown_overflow()) {
+			if (F.isknown_overflow_set()) {
+				F.invert_sign();
+			}
+		} else {
+			F.set_sign_unknown();
+		}
+		goto finish;
+	}
 	F.set_flags_unknown();
 	switch (func) {
 
@@ -706,13 +716,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set_all_reg_unknown();
 		} break;
 		case __setflag: {
-			if (F.isknown_overflow()) {
-				if (F.isknown_overflow_set()) {
-					F.invert_sign();
-				}
-			} else {
-				F.set_sign_unknown();
-			}
+			printf("Error: __setflag: We should not be here\n");
 		} break;
 	
 		/* <string.h> */
@@ -956,5 +960,6 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set_just_cxx_reg_unknown();
 		} break;
 	}
+	finish:
 	set_previous_instruction(instruction, func);
 }

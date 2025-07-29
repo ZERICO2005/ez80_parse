@@ -42,7 +42,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_HL_HL: { set_HL(add24_hl_hl(get_HL())); } break;
 		case ADD_IX_IX: { set_IX(add24_hl_hl(get_IX())); } break;
 		case ADD_IY_IY: { set_IY(add24_hl_hl(get_IY())); } break;
-	
 		case ADD_HL_HL_SIS: { set16_zero_HL(add16_hl_hl(get16_HL())); } break;
 		case ADD_IX_IX_SIS: { set16_zero_IX(add16_hl_hl(get16_IX())); } break;
 		case ADD_IY_IY_SIS: { set16_zero_IY(add16_hl_hl(get16_IY())); } break;
@@ -102,99 +101,44 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case POP_HL: { set_HL(pop_stack()); } break;
 		case POP_IX: { set_IX(pop_stack()); } break;
 		case POP_IY: { set_IY(pop_stack()); } break;
-		case EX_SP_HL: {
-			set_HL(ex_stack(get_HL()));
-		} break;
-		case EX_SP_IX: {
-			set_IX(ex_stack(get_IX()));
-		} break;
-		case EX_SP_IY: {
-			set_IY(ex_stack(get_IY()));
-		} break;
-		case INC_BC: {
-			set_BC(increment(get_BC()));
-		} break;
-		case INC_DE: {
-			set_DE(increment(get_DE()));
-		} break;
-		case INC_HL: {
-			set_HL(increment(get_HL()));
-		} break;
-		case INC_SP: {
-			increment_stack();
-		} break;
-		case INC_IX: {
-			set_IX(increment(get_IX()));
-		} break;
-		case INC_IY: {
-			set_IY(increment(get_IY()));
-		} break;
-		case INC_BC_SIS: {
-			set16_zero_BC(increment(get16_BC()));
-		} break;
-		case INC_DE_SIS: {
-			set16_zero_DE(increment(get16_DE()));
-		} break;
-		case INC_HL_SIS: {
-			set16_zero_HL(increment(get16_HL()));
-		} break;
-		case INC_SP_SIS: {
-			SP_set_unknown();
-		} break;
-		case INC_IX_SIS: {
-			set16_zero_IX(increment(get16_IX()));
-		} break;
-		case INC_IY_SIS: {
-			set16_zero_IY(increment(get16_IY()));
-		} break;
-		case DEC_BC: {
-			set_BC(decrement(get_BC()));
-		} break;
-		case DEC_DE: {
-			set_DE(decrement(get_DE()));
-		} break;
-		case DEC_HL: {
-			set_HL(decrement(get_HL()));
-		} break;
-		case DEC_SP: {
-			decrement_stack();
-		} break;
-		case DEC_IX: {
-			set_IX(decrement(get_IX()));
-		} break;
-		case DEC_IY: {
-			set_IY(decrement(get_IY()));
-		} break;
-		case DEC_BC_SIS: {
-			set16_zero_BC(decrement(get16_BC()));
-		} break;
-		case DEC_DE_SIS: {
-			set16_zero_DE(decrement(get16_DE()));
-		} break;
-		case DEC_HL_SIS: {
-			set16_zero_HL(decrement(get16_HL()));
-		} break;
-		case DEC_SP_SIS: {
-			SP_set_unknown();
-		} break;
-		case DEC_IX_SIS: {
-			set16_zero_IX(decrement(get16_IX()));
-		} break;
-		case DEC_IY_SIS: {
-			set16_zero_IY(decrement(get16_IY()));
-		} break;
-		case MLT_BC: {
-			set16_zero_BC(reg_mlt(B, C));
-		} break;
-		case MLT_DE: {
-			set16_zero_DE(reg_mlt(D, E));
-		} break;
-		case MLT_HL: {
-			set16_zero_HL(reg_mlt(H, L));
-		} break;
-		case MLT_SP: {
-			SP_set_unknown();
-		} break;
+
+		case EX_SP_HL: { set_HL(ex_stack(get_HL())); } break;
+		case EX_SP_IX: { set_IX(ex_stack(get_IX())); } break;
+		case EX_SP_IY: { set_IY(ex_stack(get_IY())); } break;
+
+		case INC_BC: { set_BC(increment(get_BC())); } break;
+		case INC_DE: { set_DE(increment(get_DE())); } break;
+		case INC_HL: { set_HL(increment(get_HL())); } break;
+		case INC_SP: { increment_stack(); } break;
+		case INC_IX: { set_IX(increment(get_IX())); } break;
+		case INC_IY: { set_IY(increment(get_IY())); } break;
+
+		case INC_BC_SIS: { set16_zero_BC(increment(get16_BC())); } break;
+		case INC_DE_SIS: { set16_zero_DE(increment(get16_DE())); } break;
+		case INC_HL_SIS: { set16_zero_HL(increment(get16_HL())); } break;
+		case INC_SP_SIS: { SP_set_unknown(); } break;
+		case INC_IX_SIS: { set16_zero_IX(increment(get16_IX())); } break;
+		case INC_IY_SIS: { set16_zero_IY(increment(get16_IY())); } break;
+
+		case DEC_BC: { set_BC(decrement(get_BC())); } break;
+		case DEC_DE: { set_DE(decrement(get_DE())); } break;
+		case DEC_HL: { set_HL(decrement(get_HL())); } break;
+		case DEC_SP: { decrement_stack(); } break;
+		case DEC_IX: { set_IX(decrement(get_IX())); } break;
+		case DEC_IY: { set_IY(decrement(get_IY())); } break;
+
+		case DEC_BC_SIS: { set16_zero_BC(decrement(get16_BC())); } break;
+		case DEC_DE_SIS: { set16_zero_DE(decrement(get16_DE())); } break;
+		case DEC_HL_SIS: { set16_zero_HL(decrement(get16_HL())); } break;
+		case DEC_SP_SIS: { SP_set_unknown(); } break;
+		case DEC_IX_SIS: { set16_zero_IX(decrement(get16_IX())); } break;
+		case DEC_IY_SIS: { set16_zero_IY(decrement(get16_IY())); } break;
+
+		case MLT_BC: { set16_zero_BC(reg_mlt(B, C)); } break;
+		case MLT_DE: { set16_zero_DE(reg_mlt(D, E)); } break;
+		case MLT_HL: { set16_zero_HL(reg_mlt(H, L)); } break;
+		case MLT_SP: { SP_set_unknown(); } break;
+
 		case LD_A_N: { A.set_value(imm8); } break;
 		case LD_B_N: { B.set_value(imm8); } break;
 		case LD_C_N: { C.set_value(imm8); } break;
@@ -216,6 +160,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_A_IXL: { A.set_value(IXL); } break;
 		case LD_A_IYH: { A.set_value(IYH); } break;
 		case LD_A_IYL: { A.set_value(IYL); } break;
+
 		case LD_A_ADDR:
 		case LD_A_PBC:
 		case LD_A_PDE:
@@ -570,8 +515,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case LD_PIY_A: {
 			set_pointers_invalid();
 		} break;
-		
-		case LD_PHL_B:
+			case LD_PHL_B:
 		case LD_PIX_B:
 		case LD_PIY_B: {
 			set_pointers_invalid();
@@ -713,9 +657,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case SET_7_D: { D.bit_set(7); } break;
 		case SET_7_E: { E.bit_set(7); } break;
 		case SET_7_H: { H.bit_set(7); } break;
-		case SET_7_L: { L.bit_set(7); } break;			
-
-		case RES_0_A: { A.bit_clear(0); } break;
+		case SET_7_L: { L.bit_set(7); } break;			case RES_0_A: { A.bit_clear(0); } break;
 		case RES_0_B: { B.bit_clear(0); } break;
 		case RES_0_C: { C.bit_clear(0); } break;
 		case RES_0_D: { D.bit_clear(0); } break;
@@ -771,8 +713,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case RES_7_E: { E.bit_clear(7); } break;
 		case RES_7_H: { H.bit_clear(7); } break;
 		case RES_7_L: { L.bit_clear(7); } break;
-		
-		case ADD_HL_BC: { set_HL(reg24_add(get_HL(), get_BC())); } break;
+			case ADD_HL_BC: { set_HL(reg24_add(get_HL(), get_BC())); } break;
 		case ADD_HL_DE: { set_HL(reg24_add(get_HL(), get_DE())); } break;
 		case ADD_HL_SP: { set_HL(reg24_add(get_HL(), get_SP())); } break;
 		case ADD_IX_BC: { set_IX(reg24_add(get_IX(), get_BC())); } break;
@@ -997,8 +938,7 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case ADD_A_PHL: { acc_add(unknown8); } break;
 		case ADD_A_PIX: { acc_add(unknown8); } break;
 		case ADD_A_PIY: { acc_add(unknown8); } break;
-		
-		case ADC_A_N  : { acc_adc(imm8); } break;
+			case ADC_A_N  : { acc_adc(imm8); } break;
 		case ADC_A_B  : { acc_adc(B); } break;
 		case ADC_A_C  : { acc_adc(C); } break;
 		case ADC_A_D  : { acc_adc(D); } break;
@@ -1072,7 +1012,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case OR_A_PHL: { acc_or(unknown8); } break;
 		case OR_A_PIX: { acc_or(unknown8); } break;
 		case OR_A_PIY: { acc_or(unknown8); } break;
-	
 		case XOR_A_N  : { acc_xor(imm8); } break;
 		case XOR_A_B  : { acc_xor(B  ); } break;
 		case XOR_A_C  : { acc_xor(C  ); } break;
@@ -1113,7 +1052,6 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case TST_A_PHL: { acc_tst(unknown8); } break;
 
 		/* 8 bit shift */
-		
 		case RL_A  : { reg_rl(A); } break;
 		case RL_B  : { reg_rl(B); } break;
 		case RL_C  : { reg_rl(C); } break;
@@ -1252,12 +1190,10 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		case JP_NC: {
 			F.set_carry(true);
 		} break;
-		
-		case JR_Z:
+			case JR_Z:
 		case JP_Z: {
 			F.set_zero(false);
 		} break;
-	
 		case JR_NZ:
 		case JP_NZ: {
 			F.set_zero(true);

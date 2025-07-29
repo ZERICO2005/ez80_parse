@@ -54,8 +54,18 @@ bool setup_code(ez80_code& code, const asm_line& line) {
 
 void set_known_function(ez80_code& code) {
 	using enum ez80_op_code;
-	if (code.instruction.op_code != CALL) {
-		return;
+	switch (code.instruction.op_code) {
+		default: return;
+		case CALL:
+		case CALL_C:
+		case CALL_NC:
+		case CALL_Z:
+		case CALL_NZ:
+		case CALL_P:
+		case CALL_M:
+		case CALL_PO:
+		case CALL_PE:
+			break;
 	}
 	size_t index;
 	bool found;

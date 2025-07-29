@@ -213,7 +213,7 @@ struct arithmetic_flags {
 		}
 		return unknown;
 	}
-	static bit_state test_subtraction_overflow(bit_state result, bit_state x, bit_state y) {
+	static bit_state test_sub_overflow(bit_state result, bit_state x, bit_state y) {
 		return test_add_overflow(result, x, invert_bit_state(y));
 	}
 };

@@ -165,6 +165,10 @@ bool is_label_valid(const string& str) {
 	if (str.length() <= 1) {
 		return false;
 	}
+	if (str.find(':') != std::string::npos) {
+		// multiple ':' found
+		return false;
+	}
 	return true;
 	#if 0
 		// currently just checks if the first invalid character is ':'
@@ -306,7 +310,12 @@ void parse_line(const string& line, ez80_instruction& output) {
 
 bool construct_asm_line(string& line, size_t line_number, asm_line& output) {
 	// is this line a label?
-	if (line.back() == ':') {
+	if (
+		line.back() == ':' &&
+		line.find('\'') == std::string::npos &&
+		line.find('\"') == std::string::npos
+	) {
+		line.pop_back(); // removes ':'
 		if (!is_label_valid(line)) {
 			printf(
 				"Warning(L%zu): Invalid label: \"%s\"\n",

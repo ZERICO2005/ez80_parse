@@ -1097,10 +1097,10 @@ class current_state {
 	}
 	void acc_neg() {
 		F.set_carry(A.is_nonzero());
-		A = -A;
+		F.set_overflow(A.is_equal(0x80));
+		A = negate(A);
 		F.set_zero(A.is_zero());
 		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_equal(0x80));
 		if (A.isknown_zero()) {
 			A.set_unknown();
 		}

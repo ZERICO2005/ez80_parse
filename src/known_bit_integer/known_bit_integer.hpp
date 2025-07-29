@@ -334,6 +334,7 @@ known_bit_integer<T> add_with_carry_and_flags(
 ) {
 	const bit_state sign_x = x.test_signbit();
 	const bit_state sign_y = y.test_signbit();
+	bool overflow_possible = !((x.isknown_zero() || y.isknown_zero()) && isknown_false(carry_inout));
 	known_bit_integer<T> ret;
 	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
 		// 1 bit full adder
@@ -351,8 +352,9 @@ known_bit_integer<T> add_with_carry_and_flags(
 	flags.zero = ret.is_zero();
 	const bit_state sign_r = ret.test_signbit();
 	flags.sign = ret.test_signbit();
-	flags.overflow = arithmetic_flags::test_add_overflow(sign_r, sign_x, sign_y);
-	if (x.isknown_zero() || y.isknown_zero()) {
+	if (overflow_possible) {
+		flags.overflow = arithmetic_flags::test_add_overflow(sign_r, sign_x, sign_y);
+	} else {
 		flags.overflow = known_false;
 	}
 	flags.parity_even = is_pairity_even(x);
@@ -387,6 +389,7 @@ known_bit_integer<T> sub_with_carry_and_flags(
 ) {
 	const bit_state sign_x = x.test_signbit();
 	const bit_state sign_y = y.test_signbit();
+	bool overflow_possible = !((x.isknown_zero() || y.isknown_zero()) && isknown_false(carry_inout));
 	known_bit_integer<T> ret;
 	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
 		// 1 bit full subtractor
@@ -405,8 +408,9 @@ known_bit_integer<T> sub_with_carry_and_flags(
 	flags.zero = ret.is_zero();
 	const bit_state sign_r = ret.test_signbit();
 	flags.sign = ret.test_signbit();
-	flags.overflow = arithmetic_flags::test_subtraction_overflow(sign_r, sign_x, sign_y);
-	if (x.isknown_zero() || y.isknown_zero()) {
+	if (overflow_possible) {
+		flags.overflow = arithmetic_flags::test_add_overflow(sign_r, sign_x, sign_y);
+	} else {
 		flags.overflow = known_false;
 	}
 	flags.parity_even = is_pairity_even(x);
