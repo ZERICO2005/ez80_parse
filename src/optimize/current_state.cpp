@@ -2,7 +2,7 @@
 
 void current_state::next_instruction(ez80_instruction instruction) {
 	using enum ez80_op_code;
-	using enum flag_state;
+	using enum bit_state;
 	ez80_op_code op_code = instruction.op_code;
 	reg8_pair unknown8;
 	unknown8.set_unknown();
@@ -112,76 +112,76 @@ void current_state::next_instruction(ez80_instruction instruction) {
 			set_IY(ex_stack(get_IY()));
 		} break;
 		case INC_BC: {
-			set_BC(get_BC().increment());
+			set_BC(increment(get_BC()));
 		} break;
 		case INC_DE: {
-			set_DE(get_DE().increment());
+			set_DE(increment(get_DE()));
 		} break;
 		case INC_HL: {
-			set_HL(get_HL().increment());
+			set_HL(increment(get_HL()));
 		} break;
 		case INC_SP: {
 			increment_stack();
 		} break;
 		case INC_IX: {
-			set_IX(get_IX().increment());
+			set_IX(increment(get_IX()));
 		} break;
 		case INC_IY: {
-			set_IY(get_IY().increment());
+			set_IY(increment(get_IY()));
 		} break;
 		case INC_BC_SIS: {
-			set16_zero_BC(get16_BC().increment());
+			set16_zero_BC(increment(get16_BC()));
 		} break;
 		case INC_DE_SIS: {
-			set16_zero_DE(get16_DE().increment());
+			set16_zero_DE(increment(get16_DE()));
 		} break;
 		case INC_HL_SIS: {
-			set16_zero_HL(get16_HL().increment());
+			set16_zero_HL(increment(get16_HL()));
 		} break;
 		case INC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case INC_IX_SIS: {
-			set16_zero_IX(get16_IX().increment());
+			set16_zero_IX(increment(get16_IX()));
 		} break;
 		case INC_IY_SIS: {
-			set16_zero_IY(get16_IY().increment());
+			set16_zero_IY(increment(get16_IY()));
 		} break;
 		case DEC_BC: {
-			set_BC(get_BC().decrement());
+			set_BC(decrement(get_BC()));
 		} break;
 		case DEC_DE: {
-			set_DE(get_DE().decrement());
+			set_DE(decrement(get_DE()));
 		} break;
 		case DEC_HL: {
-			set_HL(get_HL().decrement());
+			set_HL(decrement(get_HL()));
 		} break;
 		case DEC_SP: {
 			decrement_stack();
 		} break;
 		case DEC_IX: {
-			set_IX(get_IX().decrement());
+			set_IX(decrement(get_IX()));
 		} break;
 		case DEC_IY: {
-			set_IY(get_IY().decrement());
+			set_IY(decrement(get_IY()));
 		} break;
 		case DEC_BC_SIS: {
-			set16_zero_BC(get16_BC().decrement());
+			set16_zero_BC(decrement(get16_BC()));
 		} break;
 		case DEC_DE_SIS: {
-			set16_zero_DE(get16_DE().decrement());
+			set16_zero_DE(decrement(get16_DE()));
 		} break;
 		case DEC_HL_SIS: {
-			set16_zero_HL(get16_HL().decrement());
+			set16_zero_HL(decrement(get16_HL()));
 		} break;
 		case DEC_SP_SIS: {
 			SP_set_unknown();
 		} break;
 		case DEC_IX_SIS: {
-			set16_zero_IX(get16_IX().decrement());
+			set16_zero_IX(decrement(get16_IX()));
 		} break;
 		case DEC_IY_SIS: {
-			set16_zero_IY(get16_IY().decrement());
+			set16_zero_IY(decrement(get16_IY()));
 		} break;
 		case MLT_BC: {
 			set16_zero_BC(reg_mlt(B, C));
@@ -919,30 +919,30 @@ void current_state::next_instruction(ez80_instruction instruction) {
 		} break;
 
 		case CPI: {
-			set_HL(get_HL().decrement());
-			set_BC(get_BC().decrement());
+			set_HL(decrement(get_HL()));
+			set_BC(decrement(get_BC()));
 			F.set_zero_unknown();
 			F.set_sign_unknown();
 			F.set_overflow(get_BC().is_nonzero());
 		} break;
 		case CPD: {
-			set_HL(get_HL().decrement());
-			set_BC(get_BC().decrement());
+			set_HL(decrement(get_HL()));
+			set_BC(decrement(get_BC()));
 			F.set_zero_unknown();
 			F.set_sign_unknown();
 			F.set_overflow(get_BC().is_nonzero());
 		} break;
 		case LDI: {
-			set_HL(get_HL().increment());
-			set_HL(get_DE().increment());
-			set_BC(get_BC().decrement());
+			set_HL(increment(get_HL()));
+			set_HL(increment(get_DE()));
+			set_BC(decrement(get_BC()));
 			F.set_overflow(get_BC().is_nonzero());
 			set_pointers_invalid();
 		} break;
 		case LDD: {
-			set_HL(get_HL().decrement());
-			set_HL(get_DE().decrement());
-			set_BC(get_BC().decrement());
+			set_HL(decrement(get_HL()));
+			set_HL(decrement(get_DE()));
+			set_BC(decrement(get_BC()));
 			F.set_overflow(get_BC().is_nonzero());
 			set_pointers_invalid();
 		} break;

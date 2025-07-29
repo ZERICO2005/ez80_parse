@@ -8,16 +8,21 @@ void crt_cmpzero(flag_pair& f, T x) {
 
 template<typename T>
 void crt_cmpu(flag_pair& f, T x, T y) {
-	flag_state carry, zero;
-	unsigned_compare(carry, zero, x, y);
-	f.set_carry(carry);
-	f.set_zero(zero);
+	f.set_flags_unknown();
+	arithmetic_flags flags;
+	compare(x, y, flags);
+	f.set_carry(flags.carry);
+	f.set_zero(flags.zero);
 }
 
 template<typename T>
 void crt_cmps(flag_pair& f, T x, T y) {
 	f.set_flags_unknown();
-	f.set_zero(compare_equal(x, y));
+	arithmetic_flags flags;
+	compare(x, y, flags);
+	f.set_overflow(flags.overflow);
+	f.set_sign(flags.sign);
+	f.set_zero(flags.zero);
 }
 
 template<typename T>
@@ -53,8 +58,7 @@ T crt_xor(T dst, T src) {
 template<typename T>
 T crt_shl(T dst, reg8_pair shift) {
 	if (shift.isknown_fully()) {
-		dst.shift_left_logical(shift.bits);
-		return dst;
+		return shift_left_logical(dst, shift.bits);
 	}
 	dst.set_unknown();
 	return dst;
@@ -63,8 +67,7 @@ T crt_shl(T dst, reg8_pair shift) {
 template<typename T>
 T crt_shru(T dst, reg8_pair shift) {
 	if (shift.isknown_fully()) {
-		dst.shift_right_logical(shift.bits);
-		return dst;
+ 		return shift_right_logical(dst, shift.bits);
 	}
 	dst.set_unknown();
 	return dst;
@@ -73,7 +76,7 @@ T crt_shru(T dst, reg8_pair shift) {
 template<typename T>
 T crt_shrs(T dst, reg8_pair shift) {
 	if (shift.isknown_fully()) {
-		dst.shift_right_arithmetic(shift.bits);
+		return shift_right_arithmetic(dst, shift.bits);
 		return dst;
 	}
 	dst.set_unknown();
@@ -100,53 +103,43 @@ T crt_mul(T dst, T src) {
 
 template<typename T>
 T crt_divu(T dst, T src) {
-	dst = div_unsigned(dst, src);
-	return dst;
+	return div_trunc_unsigned(dst, src);
 }
 
 template<typename T>
 T crt_divs(T dst, T src) {
-	if (isknown_false(dst.test_signbit()) && isknown_false(src.test_signbit())) {
-		return crt_divu(dst, src);
-	}
-	dst.set_unknown();
-	return dst;
+	return div_trunc_signed(dst, src);
 }
 
 template<typename T>
 T crt_remu(T dst, T src) {
-	dst = rem_unsigned(dst, src);
-	return dst;
+	return rem_trunc_unsigned(dst, src);
 }
 
 template<typename T>
 T crt_rems(T dst, T src) {
-	if (isknown_false(dst.test_signbit()) && isknown_false(src.test_signbit())) {
-		return crt_remu(dst, src);
-	}
-	dst.set_unknown();
-	return dst;
+	return rem_trunc_signed(dst, src);
 }
 
 template<typename T>
 void crt_ctlz(reg8_pair& dst, T src) {
-	uint8_t min_bound, max_bound;
-	reg_pair_leading_zeros(min_bound,max_bound, src);
-	dst.set_to_unsigned_range(min_bound, max_bound);
+	unsigned min_bound, max_bound;
+	leading_zeros(min_bound, max_bound, src);
+	dst.set_known_unsigned_range(min_bound, max_bound);
 }
 
 template<typename T>
 void crt_cttz(reg8_pair& dst, T src) {
-	uint8_t min_bound, max_bound;
-	reg_pair_trailing_zeros(min_bound,max_bound, src);
-	dst.set_to_unsigned_range(min_bound, max_bound);
+	unsigned min_bound, max_bound;
+	trailing_zeros(min_bound, max_bound, src);
+	dst.set_known_unsigned_range(min_bound, max_bound);
 }
 
 template<typename T>
 void crt_popcnt(reg8_pair& dst, __attribute__((unused)) T src) {
-	uint8_t min_bound, max_bound;
-	reg_pair_count_ones(min_bound,max_bound, src);
-	dst.set_to_unsigned_range(min_bound, max_bound);
+	unsigned min_bound, max_bound;
+	count_ones(min_bound, max_bound, src);
+	dst.set_known_unsigned_range(min_bound, max_bound);
 }
 
 template<typename T>
@@ -156,13 +149,13 @@ T crt_bswap(T dst) {
 
 template<typename T>
 T crt_bitrev(T dst) {
-	return bit_reverse(dst);
+	return reverse_bits(dst);
 }
 
 void current_state::next_known_func(ez80_instruction instruction, ez80_known_function func) {
 	using enum ez80_known_function;
 	using enum ez80_op_code;
-	using enum flag_state;
+	using enum bit_state;
 	F.set_flags_unknown();
 	switch (func) {
 
@@ -831,7 +824,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case _strnlen: {
 			reg24_pair max_len = get24_STACK(6);
 			set_just_libc_reg_unknown(6);
-			max_len.set_to_unsigned_range(0, max_len.get_unsigned_maximum());
+			max_len.set_known_unsigned_range(0, max_len.get_unsigned_maximum());
 			set_HL(max_len);
 		} break;
 		case _strcmp: {
@@ -900,14 +893,14 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case _copysign:
 		case _copysignf: {
 			reg32_pair ret = get32_STACK(0);
-			flag_state sign = get32_STACK(6).test_signbit();
+			bit_state sign = get32_STACK(6).test_signbit();
 			set_just_libc_reg_unknown(12);
 			ret.bit_copy(31, sign);
 			set32_EUHL(ret);
 		} break;
 		case _copysignl: {
 			reg64_pair ret = get64_STACK(0);
-			flag_state sign = get64_STACK(9).test_signbit();
+			bit_state sign = get64_STACK(9).test_signbit();
 			set_just_libc_reg_unknown(18);
 			ret.bit_copy(63, sign);
 			set64_partial_BCUDEUHL(ret);

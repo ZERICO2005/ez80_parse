@@ -79,6 +79,7 @@ known_bit_integer<T> shift_right_logical(known_bit_integer<T> x, unsigned shift)
 	}
 	ret.bits = (x.bits >> shift);
 	ret.mask = ~(~x.mask >> shift);
+	return ret;
 }
 
 template<typename T>
@@ -89,6 +90,7 @@ known_bit_integer<T> shift_left_ones(known_bit_integer<T> x, unsigned shift) {
 	}
 	ret.bits = ~(~x.bits << shift);
 	ret.mask = ~(~x.mask << shift);
+	return ret;
 }
 
 template<typename T>
@@ -99,6 +101,7 @@ known_bit_integer<T> shift_right_ones(known_bit_integer<T> x, unsigned shift) {
 	}
 	ret.bits = ~(~x.bits >> shift);
 	ret.mask = ~(~x.mask >> shift);
+	return ret;
 }
 
 template<typename T>
@@ -109,6 +112,7 @@ known_bit_integer<T> shift_left_unknown_bits(known_bit_integer<T> x, unsigned sh
 	}
 	ret.bits = (x.bits << shift);
 	ret.mask = (x.mask << shift);
+	return ret;
 }
 
 template<typename T>
@@ -119,6 +123,7 @@ known_bit_integer<T> shift_right_unknown_bits(known_bit_integer<T> x, unsigned s
 	}
 	ret.bits = (x.bits >> shift);
 	ret.mask = (x.mask >> shift);
+	return ret;
 }
 
 template<typename T>
@@ -801,8 +806,8 @@ known_bit_integer<T> rem_euclidean_signed(known_bit_integer<T> num, known_bit_in
 
 template<typename T>
 void leading_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
-	min_bound = std::countl_zero(x.get_unsigned_maximum());
-	max_bound = std::countl_zero(x.get_unsigned_minimum());
+	min_bound = countl_zero(x.get_unsigned_maximum());
+	max_bound = countl_zero(x.get_unsigned_minimum());
 }
 
 template<typename T>
@@ -812,8 +817,8 @@ void leading_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T>
 
 template<typename T>
 void trailing_zeros(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
-	min_bound = std::countr_zero(x.get_unsigned_maximum());
-	max_bound = std::countr_zero(x.get_unsigned_minimum());
+	min_bound = countr_zero(x.get_unsigned_maximum());
+	max_bound = countr_zero(x.get_unsigned_minimum());
 }
 
 template<typename T>
@@ -823,8 +828,8 @@ void trailing_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T
 
 template<typename T>
 void first_leading_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
-	min_bound = std::countl_zero(x.get_unsigned_minimum()) + 1;
-	max_bound = std::countl_zero(x.get_unsigned_maximum()) + 1;
+	min_bound = countl_zero(x.get_unsigned_minimum()) + 1;
+	max_bound = countl_zero(x.get_unsigned_maximum()) + 1;
 	if (x.get_unsigned_minimum() == 0) {
 		min_bound = 0;
 	}
@@ -840,8 +845,8 @@ void first_leading_zero(unsigned& min_bound, unsigned& max_bound, known_bit_inte
 
 template<typename T>
 void first_trailing_one(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
-	min_bound = std::countr_zero(x.get_unsigned_minimum()) + 1;
-	max_bound = std::countr_zero(x.get_unsigned_maximum()) + 1;
+	min_bound = countr_zero(x.get_unsigned_minimum()) + 1;
+	max_bound = countr_zero(x.get_unsigned_maximum()) + 1;
 	if (x.get_unsigned_minimum() == 0) {
 		min_bound = 0;
 	}
@@ -857,8 +862,8 @@ void first_trailing_zero(unsigned& min_bound, unsigned& max_bound, known_bit_int
 
 template<typename T>
 void count_ones(unsigned& min_bound, unsigned& max_bound, known_bit_integer<T> x) {
-	min_bound = std::popcount(x.get_unsigned_minimum());
-	max_bound = std::popcount(x.get_unsigned_maximum());
+	min_bound = popcount(x.get_unsigned_minimum());
+	max_bound = popcount(x.get_unsigned_maximum());
 }
 
 template<typename T>

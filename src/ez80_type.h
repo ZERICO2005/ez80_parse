@@ -76,38 +76,6 @@ inline uint48_t bit_floor(uint48_t x) {
 	return static_cast<uint48_t>(bit_floor(static_cast<uint64_t>(x)));
 }
 
-template<typename T>
-constexpr uint8_t bit_width_of_type();
-
-template<> constexpr
-uint8_t bit_width_of_type<uint8_t>() { return 8; }
-template<> constexpr
-uint8_t bit_width_of_type<uint16_t>() { return 16; }
-template<> constexpr
-uint8_t bit_width_of_type<uint24_t>() { return 24; }
-template<> constexpr
-uint8_t bit_width_of_type<uint32_t>() { return 32; }
-template<> constexpr
-uint8_t bit_width_of_type<uint48_t>() { return 48; }
-template<> constexpr
-uint8_t bit_width_of_type<uint64_t>() { return 64; }
-
-template<typename T>
-constexpr T get_all_ones();
-
-template<> constexpr
-uint8_t get_all_ones<uint8_t>() { return UINT8_C(0xFF); }
-template<> constexpr
-uint16_t get_all_ones<uint16_t>() { return UINT16_C(0xFFFF); }
-template<> constexpr
-uint24_t get_all_ones<uint24_t>() { return UINT24_C(0xFFFFFF); }
-template<> constexpr
-uint32_t get_all_ones<uint32_t>() { return UINT32_C(0xFFFFFFFF); }
-template<> constexpr
-uint48_t get_all_ones<uint48_t>() { return UINT48_C(0xFFFFFFFFFFFF); }
-template<> constexpr
-uint64_t get_all_ones<uint64_t>() { return UINT64_C(0xFFFFFFFFFFFFFFFF); }
-
 #else
 
 typedef uint32_t uint24_t;

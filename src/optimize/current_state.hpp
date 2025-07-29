@@ -8,20 +8,153 @@
 #include "../ez80_known_function.h"
 #include "../ez80_parse.h"
 
-#include "reg_pair.hpp"
+#include "../known_bit_integer/ez80_kbi.hpp"
 
-typedef reg_pair<uint8_t> reg8_pair;
+//------------------------------------------------------------------------------
+// Logical merge known bits
+//------------------------------------------------------------------------------
 
-struct reg16_pair : public reg_pair<uint16_t> {
+/**
+ * @brief Uses the result from a logical AND to resolve unknown bits.
+ */
+inline void merge_known_bits_via_and(bit_state result, bit_state& x, bit_state& y) {
+	using enum bit_state;
+	if (result != known_false) {
+		return;
+	}
+	// ((X & Y) == 0) so at least one of them is zero
+	if (isknown_true(x) && !isknown(y)) {
+		y = known_false;
+		return;
+	}
+	if (isknown_true(y) && !isknown(x)) {
+		x = known_false;
+	}
+}
+
+/**
+ * @brief Uses the result from a logical OR to resolve unknown bits.
+ */
+inline void merge_known_bits_via_or(bit_state result, bit_state& x, bit_state& y) {
+	using enum bit_state;
+	if (result != known_true) {
+		return;
+	}
+	// ((X | Y) == 1) so at least one of them is zero
+	if (isknown_true(x) && !isknown(y)) {
+		y = known_false;
+		return;
+	}
+	if (isknown_true(y) && !isknown(x)) {
+		x = known_false;
+	}
+}
+
+/**
+ * @brief Uses the result from a logical XOR to resolve unknown bits.
+ */
+inline void merge_known_bits_via_xor(bit_state result, bit_state& x, bit_state& y) {
+	using enum bit_state;
+	if (result == known_false) {
+		// ((X ^ Y) == 0) so both bits are the same
+		if (isknown(x) && !isknown(y)) {
+			y = x;
+			return;
+		}
+		if (isknown(y) && !isknown(x)) {
+			x = y;
+			return;
+		}
+	}
+	if (result == known_true) {
+		// ((X ^ Y) == 1) so both bits are different
+		if (isknown(x) && !isknown(y)) {
+			y = invert_bit_state(x);
+			return;
+		}
+		if (isknown(y) && !isknown(x)) {
+			x = invert_bit_state(y);
+			return;
+		}
+	}
+}
+
+template<typename T>
+void merge_known_bits_via_and(known_bit_integer<T> result, known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		bit_state R = result.bit_test(i);
+		bit_state X = x.bit_test(i);
+		bit_state Y = y.bit_test(i);
+		merge_known_bits_via_and(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
+	}
+}
+
+template<typename T>
+void merge_known_bits_via_or(known_bit_integer<T> result, known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		bit_state R = result.bit_test(i);
+		bit_state X = x.bit_test(i);
+		bit_state Y = y.bit_test(i);
+		merge_known_bits_via_or(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
+	}
+}
+
+template<typename T>
+void merge_known_bits_via_xor(known_bit_integer<T> result, known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	for (size_t i = 0; i < bit_width_of_type<T>(); i++) {
+		bit_state R = result.bit_test(i);
+		bit_state X = x.bit_test(i);
+		bit_state Y = y.bit_test(i);
+		merge_known_bits_via_xor(R, X, Y);
+		x.bit_copy(i, X);
+		y.bit_copy(i, Y);
+	}
+}
+
+template<typename T>
+void merge_assuming_bitwise_and_is_zero(known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	known_bit_integer<T> result;
+	result.set_to_zero();
+	merge_known_bits_via_and(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_or_is_all_ones(known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	known_bit_integer<T> result;
+	result.set_to_all_ones();
+	merge_known_bits_via_or(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_xor_is_zero(known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	known_bit_integer<T> result;
+	result.set_to_zero();
+	merge_known_bits_via_xor(result, x, y);
+}
+
+template<typename T>
+void merge_assuming_bitwise_xor_is_all_ones(known_bit_integer<T>& x, known_bit_integer<T>& y) {
+	known_bit_integer<T> result;
+	result.set_to_all_ones();
+	merge_known_bits_via_xor(result, x, y);
+}
+
+typedef kbi8 reg8_pair;
+
+struct reg16_pair : public kbi16 {
 	reg16_pair() {
 		bits = 0;
 		mask = 0;
 	}
-	reg16_pair(reg_pair<uint16_t> src) {
+	reg16_pair(kbi16 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
-	void set_value(reg_pair<uint16_t> src) {
+	void set_value(kbi16 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
@@ -66,11 +199,11 @@ struct reg16_pair : public reg_pair<uint16_t> {
 		bits &= mask;
 	}
 	void set_sign_extend(reg8_pair x) {
-		using enum flag_state;
+		using enum bit_state;
 		mask = (uint24_t)x.mask;
 		bits = (uint24_t)x.bits;
 		bits &= mask;
-		flag_state sign_bit = x.test_signbit();
+		bit_state sign_bit = x.test_signbit();
 		if (sign_bit == unknown) {
 			// unable to sign extend
 			return;
@@ -87,16 +220,16 @@ struct reg16_pair : public reg_pair<uint16_t> {
 	}
 };
 
-struct reg24_pair : public reg_pair<uint24_t> {
+struct reg24_pair : public kbi24 {
 	reg24_pair() {
 		bits = 0;
 		mask = 0;
 	}
-	reg24_pair(reg_pair<uint24_t> src) {
+	reg24_pair(kbi24 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
-	void set_value(reg_pair<uint24_t> src) {
+	void set_value(kbi24 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
@@ -162,11 +295,11 @@ struct reg24_pair : public reg_pair<uint24_t> {
 		bits &= mask;
 	}
 	void set_sign_extend(reg8_pair x) {
-		using enum flag_state;
+		using enum bit_state;
 		bits = (uint24_t)x.bits;
 		mask = (uint24_t)x.mask;
 		bits &= mask;
-		flag_state sign_bit = x.test_signbit();
+		bit_state sign_bit = x.test_signbit();
 		if (sign_bit == unknown) {
 			// unable to sign extend
 			return;
@@ -183,12 +316,12 @@ struct reg24_pair : public reg_pair<uint24_t> {
 	}
 };
 
-struct reg32_pair : public reg_pair<uint32_t> {
+struct reg32_pair : public kbi32 {
 	reg32_pair() {
 		bits = 0;
 		mask = 0;
 	}
-	reg32_pair(reg_pair<uint32_t> src) {
+	reg32_pair(kbi32 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
@@ -209,11 +342,11 @@ struct reg32_pair : public reg_pair<uint32_t> {
 		mask = ((uint32_t)tp.mask << 24) | ((uint32_t)up.mask << 16) | ((uint32_t)hi.mask << 8) | lo.mask;
 	}
 	void set_sign_extend(reg24_pair x) {
-		using enum flag_state;
+		using enum bit_state;
 		mask = (uint24_t)x.mask;
 		bits = (uint24_t)x.bits;
 		bits &= mask;
-		flag_state sign_bit = x.test_signbit();
+		bit_state sign_bit = x.test_signbit();
 		if (sign_bit == unknown) {
 			// unable to sign extend
 			return;
@@ -237,12 +370,12 @@ struct reg32_pair : public reg_pair<uint32_t> {
 	}
 };
 
-struct reg48_pair : public reg_pair<uint48_t> {
+struct reg48_pair : public kbi48 {
 	reg48_pair() {
 		bits = 0;
 		mask = 0;
 	}
-	reg48_pair(reg_pair<uint48_t> src) {
+	reg48_pair(kbi48 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
@@ -268,12 +401,12 @@ struct reg48_pair : public reg_pair<uint48_t> {
 	}
 };
 
-struct reg64_pair : public reg_pair<uint64_t> {
+struct reg64_pair : public kbi64 {
 	reg64_pair() {
 		bits = 0;
 		mask = 0;
 	}
-	reg64_pair(reg_pair<uint64_t> src) {
+	reg64_pair(kbi64 src) {
 		bits = src.bits;
 		mask = src.mask;
 	}
@@ -310,15 +443,15 @@ class flag_pair {
 	ez80_flag bits;
 	ez80_flag mask;
 private:
-	flag_state flag_getter(bool known, bool flag) const {
-		using enum flag_state;
+	bit_state flag_getter(bool known, bool flag) const {
+		using enum bit_state;
 		if (known) {
 			return flag ? known_true : known_false;
 		}
 		return unknown;
 	}
-	void flag_setter(flag_state f, uint8_t flag_bit) {
-		using enum flag_state;
+	void flag_setter(bit_state f, uint8_t flag_bit) {
+		using enum bit_state;
 		if (f == unknown) {
 			mask.raw &= ~flag_bit;
 			bits.raw &= ~flag_bit;
@@ -362,16 +495,16 @@ public:
 		bits.overflow = f;
 	}
 
-	void set_carry(flag_state f) {
+	void set_carry(bit_state f) {
 		flag_setter(f, (1 << 0));
 	}
-	void set_zero(flag_state f) {
+	void set_zero(bit_state f) {
 		flag_setter(f, (1 << 6));
 	}
-	void set_sign(flag_state f) {
+	void set_sign(bit_state f) {
 		flag_setter(f, (1 << 7));
 	}
-	void set_overflow(flag_state f) {
+	void set_overflow(bit_state f) {
 		flag_setter(f, (1 << 5));
 	}
 
@@ -404,16 +537,16 @@ public:
 
 	/* getters */
 
-	flag_state get_carry() const {
+	bit_state get_carry() const {
 		return flag_getter(mask.carry, bits.carry);
 	}
-	flag_state get_zero() const {
+	bit_state get_zero() const {
 		return flag_getter(mask.zero, bits.zero);
 	}
-	flag_state get_sign() const {
+	bit_state get_sign() const {
 		return flag_getter(mask.sign, bits.sign);
 	}
-	flag_state get_overflow() const {
+	bit_state get_overflow() const {
 		return flag_getter(mask.overflow, bits.overflow);
 	}
 
@@ -458,8 +591,8 @@ public:
 
 	/* inverters */
 
-	flag_state invert_flag(flag_state f) {
-		using enum flag_state;
+	bit_state invert_flag(bit_state f) {
+		using enum bit_state;
 		if (f == unknown) {
 			return unknown;
 		}
@@ -666,7 +799,7 @@ class current_state {
 /* instructions */
 
 	void set_addition_overflow_flags(
-		flag_state result, flag_state x, flag_state y
+		bit_state result, bit_state x, bit_state y
 	) {
 		// signed overflow occurs when (pos + pos = neg) or (neg + neg = pos)
 		if (isknown(x) && isknown(y)) {
@@ -692,154 +825,100 @@ class current_state {
 	}
 
 	void set_subtraction_overflow_flags(
-		flag_state result, flag_state x, flag_state y
+		bit_state result, bit_state x, bit_state y
 	) {
 		// signed overflow occurs when (pos - neg = neg) or (neg - pos = pos)
-		set_addition_overflow_flags(result, x, cpl_flag_state(y));
+		set_addition_overflow_flags(result, x, invert_bit_state(y));
+	}
+
+	void copy_arithmetic_flags(flag_pair& dst, arithmetic_flags src) {
+		dst.set_carry(src.carry);
+		dst.set_zero(src.zero);
+		dst.set_sign(src.sign);
+		dst.set_overflow(src.overflow);
 	}
 
 	reg24_pair reg24_add(reg24_pair dst, reg24_pair src) {
-		using enum flag_state;
-		flag_state carry = known_false;
+		using enum bit_state;
+		bit_state carry = known_false;
 		dst = add_with_carry(dst, src, carry);
 		F.set_carry(carry);
 		return dst;
 	}
 	reg16_pair reg16_add(reg16_pair dst, reg16_pair src) {
-		using enum flag_state;
-		flag_state carry = known_false;
+		using enum bit_state;
+		bit_state carry = known_false;
 		dst = add_with_carry(dst, src, carry);
 		F.set_carry(carry);
 		return dst;
 	}
 	reg24_pair reg24_adc(reg24_pair dst, reg24_pair src) {
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = add_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = add_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 		return dst;
 	}
 	reg16_pair reg16_adc(reg16_pair dst, reg16_pair src) {
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = add_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = add_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 		return dst;
 	}
 	reg24_pair reg24_sbc(reg24_pair dst, reg24_pair src) {
-		using enum flag_state;
-		if (src.isknown_zero() && F.isknown_carry_clear()) {
-			F.set_zero(dst.is_zero());
-			F.set_sign(dst.test_signbit());
-			F.set_overflow(false);
-			return dst;
-		}
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = sub_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 		return dst;
 	}
 	reg16_pair reg16_sbc(reg16_pair dst, reg16_pair src) {
-		using enum flag_state;
-		if (src.isknown_zero() && F.isknown_carry_clear()) {
-			F.set_zero(dst.is_zero());
-			F.set_sign(dst.test_signbit());
-			F.set_overflow(false);
-			return dst;
-		}
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = sub_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 		return dst;
 	}
 	void acc_add(reg8_pair src) {
 		reg8_pair& dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = known_false;
-		dst = add_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state src_sign = src.test_signbit();
+		bit_state carry = known_false;
+		arithmetic_flags flags;
+		dst = add_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 	}
 	void acc_adc(reg8_pair src) {
 		reg8_pair& dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = add_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_addition_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state src_sign = src.test_signbit();
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = add_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 	}
 	void acc_sbc(reg8_pair src) {
 		reg8_pair& dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = F.get_carry();
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state src_sign = src.test_signbit();
+		bit_state carry = F.get_carry();
+		arithmetic_flags flags;
+		dst = sub_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 	}
 	void acc_sub(reg8_pair src) {
 		reg8_pair& dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = known_false;
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state src_sign = src.test_signbit();
+		bit_state carry = known_false;
+		arithmetic_flags flags;
+		dst = sub_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 	}
 	void acc_cp(reg8_pair src) {
 		reg8_pair dst = A;
-		using enum flag_state;
-		flag_state dst_sign = dst.test_signbit();
-		flag_state src_sign = src.test_signbit();
-		flag_state carry = known_false;
-		dst = subtract_with_carry(dst, src, carry);
-		F.set_carry(carry);
-		F.set_zero(dst.is_zero());
-		flag_state result_sign = dst.test_signbit();
-		F.set_sign(result_sign);
-		set_subtraction_overflow_flags(result_sign, dst_sign, src_sign);
+		bit_state src_sign = src.test_signbit();
+		bit_state carry = known_false;
+		arithmetic_flags flags;
+		dst = sub_with_carry_and_flags(dst, src, carry, flags);
+		copy_arithmetic_flags(F, flags);
 	}
 	void acc_xor(reg8_pair src) {
 		reg8_pair& dst = A;
@@ -847,7 +926,7 @@ class current_state {
 		dst = dst ^ src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void acc_or(reg8_pair src) {
 		reg8_pair& dst = A;
@@ -855,7 +934,7 @@ class current_state {
 		dst = dst | src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void acc_and(reg8_pair src) {
 		reg8_pair& dst = A;
@@ -863,7 +942,7 @@ class current_state {
 		dst = dst & src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void acc_tst(reg8_pair src) {
 		reg8_pair dst = A;
@@ -871,7 +950,7 @@ class current_state {
 		dst = dst & src;
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void acc_or_was_zero(reg8_pair& arg) {
 		F.set_sign(false);
@@ -975,17 +1054,14 @@ class current_state {
 	}
 	void acc_cp_was_nc(reg8_pair& arg) {
 		// (A >= arg)
-		reg8_pair arg_mask, acc_mask;
-		acc_mask.set_to_unsigned_range(
+		A.set_known_unsigned_range(
 			arg.get_unsigned_minimum(),
 			A.get_unsigned_maximum()
 		);
-		arg_mask.set_to_unsigned_range(
+		arg.set_known_unsigned_range(
 			arg.get_unsigned_minimum(),
 			A.get_unsigned_maximum()
 		);
-		A.merge_bits(acc_mask);
-		arg.merge_bits(arg_mask);
 	}
 	void acc_cp_was_c(reg8_pair& arg) {
 		// (A < arg) && (arg >= 1) && (A < 255)
@@ -993,16 +1069,14 @@ class current_state {
 		// arg is [1, 255]
 		reg8_pair arg_mask, acc_mask;
 		F.set_zero(false);
-		acc_mask.set_to_unsigned_range(
+		A.set_known_unsigned_range(
 			A.get_unsigned_minimum(),
 			arg.get_unsigned_maximum() - 1
 		);
-		arg_mask.set_to_unsigned_range(
+		arg.set_known_unsigned_range(
 			A.get_unsigned_minimum() + 1,
 			arg.get_unsigned_maximum()
 		);
-		A.merge_bits(acc_mask);
-		arg.merge_bits(arg_mask);
 	}
 
 	void sbc24_was_zero() {
@@ -1019,7 +1093,7 @@ class current_state {
 	}
 
 	void acc_cpl() {
-		A.complement();
+		A = complement(A);
 	}
 	void acc_neg() {
 		F.set_carry(A.is_nonzero());
@@ -1032,30 +1106,30 @@ class current_state {
 		}
 	}
 	void acc_rla() {
-		flag_state new_carry = A.test_signbit();
-		flag_state old_carry = F.get_carry();
+		bit_state new_carry = A.test_signbit();
+		bit_state old_carry = F.get_carry();
 		A.bits <<= 1;
 		A.mask <<= 1;
 		A.bit_copy(0, old_carry);
 		F.set_carry(new_carry);
 	}
 	void acc_rlca() {
-		flag_state new_carry = A.test_signbit();
+		bit_state new_carry = A.test_signbit();
 		A.bits <<= 1;
 		A.mask <<= 1;
 		A.bit_copy(0, new_carry);
 		F.set_carry(new_carry);
 	}
 	void acc_rra() {
-		flag_state new_carry = A.bit_test(0);
-		flag_state old_carry = F.get_carry();
+		bit_state new_carry = A.bit_test(0);
+		bit_state old_carry = F.get_carry();
 		A.bits >>= 1;
 		A.mask >>= 1;
 		A.bit_copy(7, old_carry);
 		F.set_carry(new_carry);
 	}
 	void acc_rrca() {
-		flag_state new_carry = A.bit_test(0);
+		bit_state new_carry = A.bit_test(0);
 		A.bits >>= 1;
 		A.mask >>= 1;
 		A.bit_copy(7, new_carry);
@@ -1064,7 +1138,7 @@ class current_state {
 	void reg8_shift_set_flags(reg8_pair src) {
 		F.set_zero(src.is_zero());
 		F.set_sign(src.test_signbit());
-		F.set_overflow(src.is_parity_even());
+		F.set_overflow(is_pairity_even(src));
 	}
 	void reg8_shift_to_zero(reg8_pair& arg) {
 		arg.set_value(0);
@@ -1072,74 +1146,74 @@ class current_state {
 		F.set_overflow(true);
 	}
 	void reg_rl(reg8_pair dst) {
-		flag_state new_carry = dst.test_signbit();
-		flag_state old_carry = F.get_carry();
-		dst.shift_left_logical(1);
+		bit_state new_carry = dst.test_signbit();
+		bit_state old_carry = F.get_carry();
+		dst = shift_left_logical(dst, 1);
 		dst.bit_copy(0, old_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_rlc(reg8_pair dst) {
-		flag_state new_carry = dst.test_signbit();
-		dst.shift_left_logical(1);
+		bit_state new_carry = dst.test_signbit();
+		dst = shift_left_logical(dst, 1);
 		dst.bit_copy(0, new_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_sla(reg8_pair dst) {
 		F.set_carry(dst.test_signbit());
-		dst.shift_left_logical(1);
+		dst = shift_left_logical(dst, 1);
 		dst.bit_clear(0);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_rr(reg8_pair dst) {
-		flag_state new_carry = dst.bit_test(0);
-		flag_state old_carry = F.get_carry();
-		dst.shift_right_logical(1);
+		bit_state new_carry = dst.bit_test(0);
+		bit_state old_carry = F.get_carry();
+		dst = shift_right_logical(dst, 1);
 		dst.bit_copy(7, old_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_rrc(reg8_pair dst) {
-		flag_state new_carry = dst.bit_test(0);
-		dst.shift_right_logical(1);
+		bit_state new_carry = dst.bit_test(0);
+		dst = shift_right_logical(dst, 1);
 		dst.bit_copy(7, new_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_srl(reg8_pair dst) {
 		F.set_carry(dst.bit_test(0));
-		dst.shift_right_logical(1);
+		dst = shift_right_logical(dst, 1);
 		dst.bit_clear(7);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void reg_sra(reg8_pair dst) {
 		F.set_carry(dst.bit_test(0));
-		dst.shift_right_arithmetic(1);
+		dst = shift_right_arithmetic(dst, 1);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
-		F.set_overflow(dst.is_parity_even());
+		F.set_overflow(is_pairity_even(dst));
 	}
 	void add_a_a() {
-		using enum flag_state;
-		flag_state old_sign = A.test_signbit();
-		flag_state new_carry = A.test_signbit();
+		using enum bit_state;
+		bit_state old_sign = A.test_signbit();
+		bit_state new_carry = A.test_signbit();
 		F.set_carry(old_sign);
-		A.shift_left_logical(1);
+		A = shift_left_logical(A, 1);
 		A.bit_clear(0);
-		flag_state new_sign = A.test_signbit();
+		bit_state new_sign = A.test_signbit();
 		F.set_carry(new_carry);
 		F.set_zero(A.is_zero());
 		F.set_sign(new_sign);
@@ -1150,14 +1224,14 @@ class current_state {
 		F.set_overflow(old_sign != new_sign);
 	}
 	void adc_a_a() {
-		using enum flag_state;
-		flag_state old_carry = F.get_carry();
-		flag_state old_sign = A.test_signbit();
-		flag_state new_carry = A.test_signbit();
+		using enum bit_state;
+		bit_state old_carry = F.get_carry();
+		bit_state old_sign = A.test_signbit();
+		bit_state new_carry = A.test_signbit();
 		F.set_carry(old_sign);
-		A.shift_left_logical(1);
+		A = shift_left_logical(A, 1);
 		A.bit_copy(0, old_carry);
-		flag_state new_sign = A.test_signbit();
+		bit_state new_sign = A.test_signbit();
 		F.set_carry(new_carry);
 		F.set_zero(A.is_zero());
 		F.set_sign(new_sign);
@@ -1250,42 +1324,42 @@ class current_state {
 		F.set_carry(false);
 		F.set_zero(A.is_zero());
 		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_overflow(is_pairity_even(A));
 	}
 	void or_a_a() {
 		F.set_carry(false);
 		F.set_zero(A.is_zero());
 		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_overflow(is_pairity_even(A));
 	}
 	void tst_a_a() {
 		F.set_carry(false);
 		F.set_zero(A.is_zero());
 		F.set_sign(A.test_signbit());
-		F.set_overflow(A.is_parity_even());
+		F.set_overflow(is_pairity_even(A));
 	}
 	reg24_pair add24_hl_hl(reg24_pair dst) {
 		F.set_carry(dst.test_signbit());
-		dst.shift_left_logical(1);
+		dst = shift_left_logical(dst, 1);
 		dst.bit_clear(0);
 		return dst;
 	}
 	reg16_pair add16_hl_hl(reg16_pair dst) {
 		F.set_carry(dst.test_signbit());
-		dst.shift_left_logical(1);
+		dst = shift_left_logical(dst, 1);
 		dst.bit_clear(0);
 		return dst;
 	}
 	reg24_pair adc24_hl_hl(reg24_pair dst) {
-		using enum flag_state;
-		flag_state old_carry = F.get_carry();
-		flag_state new_carry = dst.test_signbit();
-		flag_state old_sign = dst.test_signbit();
-		dst.shift_left_logical(1);
+		using enum bit_state;
+		bit_state old_carry = F.get_carry();
+		bit_state new_carry = dst.test_signbit();
+		bit_state old_sign = dst.test_signbit();
+		dst = shift_left_logical(dst, 1);
 		dst.bit_copy(0, old_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
-		flag_state new_sign = dst.test_signbit();
+		bit_state new_sign = dst.test_signbit();
 		F.set_sign(new_sign);
 		if (new_sign == unknown || old_sign == unknown) {
 			F.set_overflow_unknown();
@@ -1295,15 +1369,15 @@ class current_state {
 		return dst;
 	}
 	reg16_pair adc16_hl_hl(reg16_pair dst) {
-		using enum flag_state;
-		flag_state old_carry = F.get_carry();
-		flag_state new_carry = dst.test_signbit();
-		flag_state old_sign = dst.test_signbit();
-		dst.shift_left_logical(1);
+		using enum bit_state;
+		bit_state old_carry = F.get_carry();
+		bit_state new_carry = dst.test_signbit();
+		bit_state old_sign = dst.test_signbit();
+		dst = shift_left_logical(dst, 1);
 		dst.bit_copy(0, old_carry);
 		F.set_carry(new_carry);
 		F.set_zero(dst.is_zero());
-		flag_state new_sign = dst.test_signbit();
+		bit_state new_sign = dst.test_signbit();
 		F.set_sign(new_sign);
 		if (new_sign == unknown || old_sign == unknown) {
 			F.set_overflow_unknown();
@@ -1342,7 +1416,7 @@ class current_state {
 		F.set_overflow(false);
 	}
 	void reg8_bitwise_flag_set(reg8_pair arg) {
-		F.set_overflow(arg.is_parity_even());
+		F.set_overflow(is_pairity_even(arg));
 		F.set_zero(arg.is_zero());
 		F.set_sign(arg.test_signbit());
 	}
@@ -1358,13 +1432,13 @@ class current_state {
 	}
 	void reg8_inc(reg8_pair dst) {
 		F.set_overflow(dst.is_equal(0x7F));
-		dst.increment();
+		dst = increment(dst);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 	}
 	void reg8_dec(reg8_pair dst) {
 		F.set_overflow(dst.is_equal(0x80));
-		dst.decrement();
+		dst = decrement(dst);
 		F.set_zero(dst.is_zero());
 		F.set_sign(dst.test_signbit());
 	}
@@ -1755,8 +1829,8 @@ class current_state {
 
 	void check_previous_instruction(ez80_instruction current_instruction);
 
-	string print_flag(flag_state f, string when_known_true) const {
-		using enum flag_state;
+	string print_flag(bit_state f, string when_known_true) const {
+		using enum bit_state;
 		if (f == known_true) {
 			return when_known_true;
 		}

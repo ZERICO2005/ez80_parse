@@ -7,6 +7,16 @@
 
 namespace kbi {
 
+template<> constexpr
+size_t bit_width_of_type<uint24_t>() { return 24; }
+template<> constexpr
+size_t bit_width_of_type<uint48_t>() { return 48; }
+
+template<> constexpr
+uint24_t get_all_ones<uint24_t>() { return UINT24_C(0xFFFFFF); }
+template<> constexpr
+uint48_t get_all_ones<uint48_t>() { return UINT48_C(0xFFFFFFFFFFFF); }
+
 inline known_bit_integer<uint24_t> reverse_bits(known_bit_integer<uint24_t> x) {
 	uint32_t temp_bits = static_cast<uint32_t>(x.bits);
 	uint32_t temp_mask = static_cast<uint32_t>(x.mask);

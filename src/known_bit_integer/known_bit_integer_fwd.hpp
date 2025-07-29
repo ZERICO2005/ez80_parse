@@ -465,12 +465,12 @@ public:
 		if (min_bound > max_bound) {
 			std::swap(min_bound, max_bound);
 		}
-		if (get_unsigned_minimum() < min_bound) {
-			set_value(min_bound);
+		if (get_unsigned_minimum() > max_bound) {
+			set_value(max_bound);
 			return;
 		}
-		if (get_unsigned_maximum() > max_bound) {
-			set_value(max_bound);
+		if (get_unsigned_maximum() < min_bound) {
+			set_value(min_bound);
 			return;
 		}
 		for (size_t i = bit_width_of_type<T>(); i --> 0;) {

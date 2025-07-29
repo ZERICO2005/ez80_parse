@@ -3,17 +3,14 @@
 template <typename T>
 void cmpu_was_nc(__attribute__((unused)) flag_pair& f, T& x, T& y) {
 	// (X >= Y)
-	T x_mask, y_mask;
-	x_mask.set_to_unsigned_range(
+	x.set_known_unsigned_range(
 		y.get_unsigned_minimum(),
 		x.get_unsigned_maximum()
 	);
-	y_mask.set_to_unsigned_range(
+	y.set_known_unsigned_range(
 		y.get_unsigned_minimum(),
 		x.get_unsigned_maximum()
 	);
-	x.merge_bits(x_mask);
-	y.merge_bits(y_mask);
 }
 
 template <typename T>
@@ -22,17 +19,14 @@ void cmpu_was_c(flag_pair& f, T& x, T& y) {
 	// X is [0, UINT(N)_MAX - 1]
 	// Y is [1, UINT(N)_MAX]
 	f.set_zero(false);
-	T x_mask, y_mask;
-	x_mask.set_to_unsigned_range(
+	x.set_known_unsigned_range(
 		x.get_unsigned_minimum(),
 		y.get_unsigned_maximum() - 1
 	);
-	y_mask.set_to_unsigned_range(
+	y.set_known_unsigned_range(
 		x.get_unsigned_minimum() + 1,
 		y.get_unsigned_maximum()
 	);
-	x.merge_bits(x_mask);
-	y.merge_bits(y_mask);
 }
 
 void current_state::check_previous_instruction(ez80_instruction current_instruction) {
