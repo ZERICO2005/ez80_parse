@@ -159,12 +159,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		/* 8 bit */
 
 		case __bshl: {
+			B.suggest_possible_unsigned_range(0, 7);
 			A.set_value(crt_shl(A, B));
 		} break;
 		case __bshru: {
+			B.suggest_possible_unsigned_range(0, 7);
 			A.set_value(crt_shru(A, B));
 		} break;
 		case __bshrs: {
+			B.suggest_possible_unsigned_range(0, 7);
 			A.set_value(crt_shru(A, B));
 		} break;
 		case __bdivu: {
@@ -215,12 +218,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set16_partial_HL(crt_xor(get16_HL(), get16_BC()));
 		} break;
 		case __sshl: {
+			C.suggest_possible_unsigned_range(0, 15);
 			set16_partial_HL(crt_shl(get16_HL(), C));
 		} break;
 		case __sshru: {
+			C.suggest_possible_unsigned_range(0, 15);
 			set16_partial_HL(crt_shru(get16_HL(), C));
 		} break;
 		case __sshrs: {
+			C.suggest_possible_unsigned_range(0, 15);
 			set16_partial_HL(crt_shrs(get16_HL(), C));
 		} break;
 		case __smulu: {
@@ -275,12 +281,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set_HL(crt_xor(get_HL(), get_BC()));
 		} break;
 		case __ishl: {
+			C.suggest_possible_unsigned_range(0, 23);
 			set_HL(crt_shl(get_HL(), C));
 		} break;
 		case __ishru: {
+			C.suggest_possible_unsigned_range(0, 23);
 			set_HL(crt_shru(get_HL(), C));
 		} break;
 		case __ishrs: {
+			C.suggest_possible_unsigned_range(0, 23);
 			set_HL(crt_shrs(get_HL(), C));
 		} break;
 		case __imulu: {
@@ -341,12 +350,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set32_EUHL(crt_xor(get32_EUHL(), get32_AUBC()));
 		} break;
 		case __lshl: {
+			L.suggest_possible_unsigned_range(0, 31);
 			set32_AUBC(crt_shl(get32_AUBC(), L));
 		} break;
 		case __lshru: {
+			L.suggest_possible_unsigned_range(0, 31);
 			set32_AUBC(crt_shru(get32_AUBC(), L));
 		} break;
 		case __lshrs: {
+			L.suggest_possible_unsigned_range(0, 31);
 			set32_AUBC(crt_shrs(get32_AUBC(), L));
 		} break;
 		case __ladd: {
@@ -413,12 +425,15 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			set48_UDEUHL(crt_xor(get48_UDEUHL(), get48_UIYUBC()));
 		} break;
 		case __i48shl: {
+			C.suggest_possible_unsigned_range(0, 47);
 			set48_UDEUHL(crt_shl(get48_UDEUHL(), C));
 		} break;
 		case __i48shru: {
+			C.suggest_possible_unsigned_range(0, 47);
 			set48_UDEUHL(crt_shru(get48_UDEUHL(), C));
 		} break;
 		case __i48shrs: {
+			C.suggest_possible_unsigned_range(0, 47);
 			set48_UDEUHL(crt_shrs(get48_UDEUHL(), C));
 		} break;
 		case __i48add: {

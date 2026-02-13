@@ -457,6 +457,7 @@ public:
 
 	/* set to range */
 
+	// destroys current value
 	void set_known_unsigned_range(T min_bound, T max_bound) {
 		if (min_bound == max_bound) {
 			set_value(min_bound);
@@ -470,6 +471,41 @@ public:
 			return;
 		}
 		if (get_unsigned_maximum() < min_bound) {
+			set_value(min_bound);
+			return;
+		}
+		for (size_t i = bit_width_of_type<T>(); i --> 0;) {
+			bool x = (min_bound & (static_cast<T>(1) << i));
+			bool y = (max_bound & (static_cast<T>(1) << i));
+			if (x != y) {
+				break;
+			}
+			bit_copy_if_unknown(i, x);
+		}
+	}
+
+	// updates current value
+	void suggest_possible_unsigned_range(T min_bound, T max_bound) {
+		if (isknown_fully()) {
+			// contradiction
+			return;
+		}
+		if (isunknown_fully()) {
+			set_known_unsigned_range(min_bound, max_bound);
+		}
+		if (min_bound > max_bound) {
+			std::swap(min_bound, max_bound);
+		}
+		if (get_unsigned_minimum() > max_bound) {
+			// contradiction
+			return;
+		}
+		if (get_unsigned_maximum() < min_bound) {
+			// contradiction
+			return;
+		}
+		// min_bound <= value <= max_bound
+		if (min_bound == max_bound) {
 			set_value(min_bound);
 			return;
 		}
