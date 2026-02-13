@@ -681,10 +681,16 @@ void divrem_trunc_unsigned(
 	known_bit_integer<T> num,
 	known_bit_integer<T> den
 ) {
-	if (!den.isknown_nonzero()) {
-		// We have not proved that a division by zero will not occur
+	if (den.isknown_zero()) {
+		// dividing by known zero, undefined
 		rem.set_unknown();
 		quo.set_unknown();
+		return;
+	}
+	if (!den.isknown_nonzero()) {
+		// assume that we are not dividing by zero
+		rem.set_known_unsigned_range(0, den.get_unsigned_maximum() - 1);
+		quo.set_known_unsigned_range(0, num.get_unsigned_maximum());
 		return;
 	}
 	quo.set_to_zero();
