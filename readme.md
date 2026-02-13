@@ -2,6 +2,15 @@ ez80_parse
 
 This tool predicts the state of registers on the eZ80. This can be useful for finding optimizations and etc.
 
+# build instructions
+
+```
+cd ez80_parse
+cmake -S . -B build -G Ninja
+cmake --build build
+build/parse_asm
+```
+
 # register prediction tool
 
 The register prediction tool will keep track of register values and flags. It also supports CRT function and LIBC functions to improve predictions.

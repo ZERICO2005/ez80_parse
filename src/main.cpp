@@ -12,17 +12,17 @@ void load_asm_file(string& output, const char* input_path) {
     std::ifstream file(input_path);
     if (file) {
         // Read the file content into the string
-        output.assign((std::istreambuf_iterator<char>(file)),
-                            std::istreambuf_iterator<char>());
+        output.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close(); // Close the file
     } else {
-        std::cerr << "Error opening file: " << input_path << std::endl;
+		std::cerr << "Error opening file: " << input_path << std::endl;
+		output.clear();
     }
 }
 
 void save_asm_file(const char* output_path, std::string& input) {
     std::ofstream output_file(output_path, std::ios::binary);
-    
+
     if (!output_file) {
         std::cerr << "Error opening file for writing: " << output_path << std::endl;
         return;
@@ -39,8 +39,8 @@ int main(void) {
 	if (test_reg_pair() == false) {
 		printf("Failed tests\n");
 	}
-	char const * const input_path = "../input/input_asm.src";
-	char const * const output_path = "../output/output_asm.src";
+	char const * const input_path = "input/input_asm.src";
+	char const * const output_path = "output/output_asm.src";
 	printf("asm parse\n");
 
 	string input_asm;

@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.24)
 
 set(SRC_DIR "./src")
 
 set(PROJECT_NAME "parse_asm")
 project(${PROJECT_NAME})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "./bin")
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "./bin")
 
 # Compiler
 set(CMAKE_C_COMPILER "clang")
@@ -15,13 +15,17 @@ set(CMAKE_CXX_COMPILER "clang++")
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_COLOR_DIAGNOSTICS ON)
+
 file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
 # Create an executable
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 #target_include_directories(${PROJECT_NAME} PUBLIC )
 # Compiler Flags Debug(-g -O0) Release(-O3)
-set(OPT_FLAG -O2)
+set(OPT_FLAG -O2 -g3)
 target_compile_options(
 	${PROJECT_NAME} PUBLIC ${OPT_FLAG}
 	-Wall -Wextra -Wshadow
