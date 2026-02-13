@@ -141,6 +141,70 @@ known_bit_integer<T> shift_right_arithmetic(known_bit_integer<T> x, unsigned shi
 }
 
 //------------------------------------------------------------------------------
+// shift unknown
+//------------------------------------------------------------------------------
+
+template<typename T>
+known_bit_integer<T> shift_left_logical(known_bit_integer<T> x, known_bit_integer<uint8_t> shift) {
+	known_bit_integer<T> ret;
+	uint8_t min_shift = shift.get_unsigned_minimum();
+	// assume that we are not shifting by more than bit width - 1
+	uint8_t max_shift = std::min<uint8_t>(bit_width_of_type<T>() - 1, shift.get_unsigned_maximum());
+	if (min_shift >= bit_width_of_type<T>()) {
+		// all cases are undefined
+		return ret;
+	}
+	ret = shift_left_logical(x, min_shift);
+	for (int i = static_cast<int>(min_shift) + 1; i <= static_cast<int>(max_shift); i++) {
+		if (shift.isknown_notequal(i)) {
+			continue;
+		}
+		ret.merge_bits_intersection(shift_left_logical(x, i));
+	}
+	return ret;
+}
+
+template<typename T>
+known_bit_integer<T> shift_right_logical(known_bit_integer<T> x, known_bit_integer<uint8_t> shift) {
+	known_bit_integer<T> ret;
+	uint8_t min_shift = shift.get_unsigned_minimum();
+	// assume that we are not shifting by more than bit width - 1
+	uint8_t max_shift = std::min<uint8_t>(bit_width_of_type<T>() - 1, shift.get_unsigned_maximum());
+	if (min_shift >= bit_width_of_type<T>()) {
+		// all cases are undefined
+		return ret;
+	}
+	ret = shift_right_logical(x, min_shift);
+	for (int i = static_cast<int>(min_shift) + 1; i <= static_cast<int>(max_shift); i++) {
+		if (shift.isknown_notequal(i)) {
+			continue;
+		}
+		ret.merge_bits_intersection(shift_right_logical(x, i));
+	}
+	return ret;
+}
+
+template<typename T>
+known_bit_integer<T> shift_right_arithmetic(known_bit_integer<T> x, known_bit_integer<uint8_t> shift) {
+	known_bit_integer<T> ret;
+	uint8_t min_shift = shift.get_unsigned_minimum();
+	// assume that we are not shifting by more than bit width - 1
+	uint8_t max_shift = std::min<uint8_t>(bit_width_of_type<T>() - 1, shift.get_unsigned_maximum());
+	if (min_shift >= bit_width_of_type<T>()) {
+		// all cases are undefined
+		return ret;
+	}
+	ret = shift_right_arithmetic(x, min_shift);
+	for (int i = static_cast<int>(min_shift) + 1; i <= static_cast<int>(max_shift); i++) {
+		if (shift.isknown_notequal(i)) {
+			continue;
+		}
+		ret.merge_bits_intersection(shift_right_arithmetic(x, i));
+	}
+	return ret;
+}
+
+//------------------------------------------------------------------------------
 // rotate
 //------------------------------------------------------------------------------
 

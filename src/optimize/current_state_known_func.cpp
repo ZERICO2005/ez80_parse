@@ -57,30 +57,17 @@ T crt_xor(T dst, T src) {
 
 template<typename T>
 T crt_shl(T dst, reg8_pair shift) {
-	if (shift.isknown_fully()) {
-		return shift_left_logical(dst, shift.bits);
-	}
-	dst.set_unknown();
-	return dst;
+	return shift_left_logical(dst, shift);
 }
 
 template<typename T>
 T crt_shru(T dst, reg8_pair shift) {
-	if (shift.isknown_fully()) {
- 		return shift_right_logical(dst, shift.bits);
-	}
-	dst.set_unknown();
-	return dst;
+	return shift_right_logical(dst, shift);
 }
 
 template<typename T>
 T crt_shrs(T dst, reg8_pair shift) {
-	if (shift.isknown_fully()) {
-		return shift_right_arithmetic(dst, shift.bits);
-		return dst;
-	}
-	dst.set_unknown();
-	return dst;
+	return shift_right_arithmetic(dst, shift);
 }
 
 template<typename T>
