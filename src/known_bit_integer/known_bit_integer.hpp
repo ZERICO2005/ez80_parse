@@ -590,13 +590,13 @@ known_bit_integer<T> mul_hi_signed(known_bit_integer<T> x, known_bit_integer<T> 
 template<typename T>
 known_bit_integer<T> square(known_bit_integer<T> x) {
 	/* the lower 4 bits can only be 0, 1, 4, or 9 */
-	/* 
+	/*
 	| 0: 0000
 	| 1: 0001
 	| 4: 0100
 	| 9: 1001
 	*/
-	/* 
+	/*
 	| 00: 00000
 	| 01: 00001
 	| 04: 00100
@@ -605,7 +605,7 @@ known_bit_integer<T> square(known_bit_integer<T> x) {
 	| 11: 10001
 	| 19: 11001
 	*/
-	/* 
+	/*
 	| 00: 000000
 	| 01: 000001
 	| 04: 000100

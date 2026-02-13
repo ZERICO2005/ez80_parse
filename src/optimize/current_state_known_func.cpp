@@ -206,7 +206,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case __bbitrev: {
 			A.set_value(crt_bitrev(A));
 		} break;
-	
+
 		/* 16 bit */
 
 		case __scmpzero: {
@@ -326,7 +326,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case __ibitrev: {
 			set_HL(crt_bitrev(get_HL()));
 		} break;
-		
+
 		/* 32 bit */
 
 		case __lcmpzero: {
@@ -398,9 +398,9 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case __lbitrev: {
 			set32_EUHL(crt_bitrev(get32_EUHL()));
 		} break;
-		
+
 		/* 48 bit */
-	
+
 		case __i48cmpzero: {
 			crt_cmpzero(F, get48_UDEUHL());
 		} break;
@@ -542,7 +542,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case __llbitrev: {
 			set64_partial_BCUDEUHL(crt_bitrev(get64_BCUDEUHL()));
 		} break;
-	
+
 		/* float/double */
 
 		case __fcmp: {
@@ -615,7 +615,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			DE_set_unknown();
 			HL_set_unknown();
 		} break;
-	
+
 		/* long double */
 
 		case __dcmp: {
@@ -706,7 +706,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 			DE_set_unknown();
 			HL_set_unknown();
 		} break;
-		
+
 		/* CRT routines */
 
 		case __frameset: {
@@ -718,7 +718,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case __setflag: {
 			printf("Error: __setflag: We should not be here\n");
 		} break;
-	
+
 		/* <string.h> */
 
 		case _memcpy: {
@@ -843,7 +843,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case _strncasecmp: {
 			set_just_libc_reg_unknown(6);
 		} break;
-	
+
 		/* <ctype.h> */
 
 		case _isalnum: {
@@ -891,7 +891,7 @@ void current_state::next_known_func(ez80_instruction instruction, ez80_known_fun
 		case _sxdigit: {
 			set_just_libc_reg_unknown(3);
 		} break;
-	
+
 		/* <math.h> */
 
 		case _copysign:

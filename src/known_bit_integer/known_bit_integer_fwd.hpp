@@ -248,7 +248,7 @@ public:
 	void set_raw_mask(T m) {
 		mask = m;
 	}
-	
+
 	void set_canonical() {
 		// set unknown bits to zero
 		bits &= mask;
@@ -495,7 +495,7 @@ public:
 // Merge bits
 //------------------------------------------------------------------------------
 
-/** 
+/**
  * @brief sets bits to unknown on conflict
  */
 void merge_bits_favor_unknown(known_bit_integer<T> y) {
@@ -516,7 +516,7 @@ void merge_bits_favor_unknown(known_bit_integer<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief preserves bits on conflict
  */
 void merge_bits_preserve(known_bit_integer<T> y) {
@@ -533,7 +533,7 @@ void merge_bits_preserve(known_bit_integer<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief overwrites bits on conflict
  */
 void merge_bits_overwrite(known_bit_integer<T> y) {
@@ -554,7 +554,7 @@ void merge_bits_overwrite(known_bit_integer<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief sets any bits that differ to unknown
  */
 void merge_bits_intersection(known_bit_integer<T> y) {

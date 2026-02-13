@@ -49,7 +49,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 				F.set_carry(false);
 				switch (previous_known_func) {
 					case __lcmpu:
-					{ 
+					{
 						reg32_pair x = get32_EUHL();
 						reg32_pair y = get32_AUBC();
 						cmpu_was_nc(F, x, y);
@@ -57,7 +57,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 						set32_AUBC(y);
 					} break;
 					case __i48cmpu:
-					{ 
+					{
 						reg48_pair x = get48_UDEUHL();
 						reg48_pair y = get48_UIYUBC();
 						cmpu_was_nc(F, x, y);
@@ -65,7 +65,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 						set48_UIYUBC(y);
 					} break;
 					case __llcmpu:
-					{ 
+					{
 						reg64_pair x = get64_BCUDEUHL();
 						reg64_pair y = get64_STACK(0);
 						cmpu_was_nc(F, x, y);
@@ -80,7 +80,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 				F.set_carry(true);
 				switch (previous_known_func) {
 					case __lcmpu:
-					{ 
+					{
 						reg32_pair x = get32_EUHL();
 						reg32_pair y = get32_AUBC();
 						cmpu_was_c(F, x, y);
@@ -88,7 +88,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 						set32_AUBC(y);
 					} break;
 					case __i48cmpu:
-					{ 
+					{
 						reg48_pair x = get48_UDEUHL();
 						reg48_pair y = get48_UIYUBC();
 						cmpu_was_c(F, x, y);
@@ -96,7 +96,7 @@ void current_state::check_previous_instruction(ez80_instruction current_instruct
 						set48_UIYUBC(y);
 					} break;
 					case __llcmpu:
-					{ 
+					{
 						reg64_pair x = get64_BCUDEUHL();
 						reg64_pair y = get64_STACK(0);
 						cmpu_was_c(F, x, y);

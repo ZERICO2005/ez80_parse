@@ -8,7 +8,7 @@
 
 inline string visualize_escape_codes(const string& str) {
 	string ret = "";
-    for (char ch : str) {
+	for (char ch : str) {
 		if (ch == '\'') {
 			ret += "\\\'";
 			continue;
@@ -21,10 +21,10 @@ inline string visualize_escape_codes(const string& str) {
 			ret += "\\\\";
 			continue;
 		}
-        if (isprint(ch)) {
-            ret += ch;
+		if (isprint(ch)) {
+			ret += ch;
 			continue;
-        }
+		}
 		switch (ch) {
 			case '\0': { ret += "\\0"; } break;
 			case '\t': { ret += "\\t"; } break;
@@ -38,7 +38,7 @@ inline string visualize_escape_codes(const string& str) {
 				ret += buf;
 			} break;
 		}
-    }
+	}
 	return ret;
 }
 
@@ -51,12 +51,12 @@ inline char str_retrive(const string& line, size_t index) {
 
 
 inline bool contains_ctype(const string& str, int (&ctype_func)(int)) {
-    for (char ch : str) {
-        if ((ctype_func)(static_cast<unsigned char>(ch))) {
-            return true;
-        }
-    }
-    return false;
+	for (char ch : str) {
+		if ((ctype_func)(static_cast<unsigned char>(ch))) {
+			return true;
+		}
+	}
+	return false;
 }
 
 inline bool case_insensetive_word_compare(const char* str, const char* word) {

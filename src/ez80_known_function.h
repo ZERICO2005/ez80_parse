@@ -37,7 +37,7 @@ enum class ez80_known_function {
 	__sshrs,
 	__sshru,
 	__sxor,
-	
+
 	/* 24 bit */
 	__iand,
 	__ibitrev,
@@ -58,7 +58,7 @@ enum class ez80_known_function {
 	__ishrs,
 	__ishru,
 	__ixor,
-	
+
 	/* 32 bit */
 	__ladd,
 	__land,
@@ -83,7 +83,7 @@ enum class ez80_known_function {
 	__lshru,
 	__lsub,
 	__lxor,
-	
+
 	/* 48 bit */
 	__i48add,
 	__i48and,
@@ -108,7 +108,7 @@ enum class ez80_known_function {
 	__i48shru,
 	__i48sub,
 	__i48xor,
-	
+
 	/* 64 bit */
 	__lladd,
 	__lland,
@@ -287,7 +287,7 @@ char const * const ez80_known_function_name[] {
 	"__sshrs",
 	"__sshru",
 	"__sxor",
-	
+
 	/* 24 bit */
 	"__iand",
 	"__ibitrev",
@@ -308,7 +308,7 @@ char const * const ez80_known_function_name[] {
 	"__ishrs",
 	"__ishru",
 	"__ixor",
-	
+
 	/* 32 bit */
 	"__ladd",
 	"__land",
@@ -333,7 +333,7 @@ char const * const ez80_known_function_name[] {
 	"__lshru",
 	"__lsub",
 	"__lxor",
-	
+
 	/* 48 bit */
 	"__i48add",
 	"__i48and",
@@ -358,7 +358,7 @@ char const * const ez80_known_function_name[] {
 	"__i48shru",
 	"__i48sub",
 	"__i48xor",
-	
+
 	/* 64 bit */
 	"__lladd",
 	"__lland",

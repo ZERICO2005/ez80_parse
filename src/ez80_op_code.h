@@ -480,7 +480,7 @@ enum class ez80_op_code {
 	SRA_PHL,
 	SRA_PIX,
 	SRA_PIY,
-	
+
 	SRL_A,
 	SRL_B,
 	SRL_C,
@@ -864,7 +864,7 @@ enum class ez80_op_code {
 	BIT_7_PIY,
 
 	/* Set bits */
-	
+
 	SET_0_A,
 	SET_0_B,
 	SET_0_C,
@@ -1028,7 +1028,7 @@ enum class ez80_op_code {
 	RES_7_PHL,
 	RES_7_PIX,
 	RES_7_PIY,
-	
+
 	/* IO instructions */
 
 	IN_A_PBC,

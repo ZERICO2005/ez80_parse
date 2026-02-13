@@ -1844,7 +1844,7 @@ class current_state {
 		const char table[16] = {
 			'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
 		};
-		char buf[3] = "--"; 
+		char buf[3] = "--";
 		uint8_t hi_mask = (dst.mask & 0xF0) >> 4;
 		uint8_t lo_mask = (dst.mask & 0x0F);
 		uint8_t hi_bits = (dst.bits & 0xF0) >> 4;
@@ -1884,11 +1884,11 @@ class current_state {
 			" | IX " + print_reg24(UIX, IXH, IXL) +
 			" | IY " + print_reg24(UIY, IYH, IYL) +
 			" | A " + print_reg8(A) +
-			" | BC " + print_reg24(UBC, B, C) + 
+			" | BC " + print_reg24(UBC, B, C) +
 			" | DE " + print_reg24(UDE, D, E) +
-			" | HL " + print_reg24(UHL, H, L) + 
+			" | HL " + print_reg24(UHL, H, L) +
 			" | " +
-			print_flag(F.get_sign(), "S") + 
+			print_flag(F.get_sign(), "S") +
 			print_flag(F.get_zero(), "Z") +
 			print_flag(F.get_overflow(), "V") +
 			print_flag(F.get_carry(), "C")

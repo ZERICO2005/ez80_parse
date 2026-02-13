@@ -174,14 +174,14 @@ void handle_ret_cc(
 		return;
 	}
 	switch ((ez80_condition_code)index) {
-		case C  : { output.op_code = RET_C ; } break; 
-		case NC : { output.op_code = RET_NC; } break; 
-		case Z  : { output.op_code = RET_Z ; } break; 
-		case NZ : { output.op_code = RET_NZ; } break; 
-		case P  : { output.op_code = RET_P ; } break; 
-		case M  : { output.op_code = RET_M ; } break; 
-		case PO : { output.op_code = RET_PO; } break; 
-		case PE : { output.op_code = RET_PE; } break; 
+		case C  : { output.op_code = RET_C ; } break;
+		case NC : { output.op_code = RET_NC; } break;
+		case Z  : { output.op_code = RET_Z ; } break;
+		case NZ : { output.op_code = RET_NZ; } break;
+		case P  : { output.op_code = RET_P ; } break;
+		case M  : { output.op_code = RET_M ; } break;
+		case PO : { output.op_code = RET_PO; } break;
+		case PE : { output.op_code = RET_PE; } break;
 		default: break;
 	}
 }
@@ -197,11 +197,11 @@ void handle_call_jump(
 	if (str.size() == 2) {
 		using enum instruction_enum_start;
 		switch (oper) {
-			case DJNZ : { output.op_code = ez80_op_code::DJNZ ; } break; 
-			case JR   : { output.op_code = ez80_op_code::JR   ; } break; 
-			case JQ   : { output.op_code = ez80_op_code::JP   ; } break; 
-			case JP   : { output.op_code = ez80_op_code::JP   ; } break; 
-			case CALL : { output.op_code = ez80_op_code::CALL ; } break; 
+			case DJNZ : { output.op_code = ez80_op_code::DJNZ ; } break;
+			case JR   : { output.op_code = ez80_op_code::JR   ; } break;
+			case JQ   : { output.op_code = ez80_op_code::JP   ; } break;
+			case JP   : { output.op_code = ez80_op_code::JP   ; } break;
+			case CALL : { output.op_code = ez80_op_code::CALL ; } break;
 			default: break;
 		}
 		set_imm_value(output, str, 1);
@@ -219,10 +219,10 @@ void handle_call_jump(
 		using enum instruction_enum_start;
 		case JR: {
 			switch (cc) {
-				case C  : { output.op_code = JR_C ; } break; 
-				case NC : { output.op_code = JR_NC; } break; 
-				case Z  : { output.op_code = JR_Z ; } break; 
-				case NZ : { output.op_code = JR_NZ; } break; 
+				case C  : { output.op_code = JR_C ; } break;
+				case NC : { output.op_code = JR_NC; } break;
+				case Z  : { output.op_code = JR_Z ; } break;
+				case NZ : { output.op_code = JR_NZ; } break;
 				default: break;
 			}
 			set_imm_value(output, str, 2);
@@ -230,28 +230,28 @@ void handle_call_jump(
 		case JQ:
 		case JP: {
 			switch (cc) {
-				case C  : { output.op_code = JP_C ; } break; 
-				case NC : { output.op_code = JP_NC; } break; 
-				case Z  : { output.op_code = JP_Z ; } break; 
-				case NZ : { output.op_code = JP_NZ; } break; 
-				case P  : { output.op_code = JP_P ; } break; 
-				case M  : { output.op_code = JP_M ; } break; 
-				case PO : { output.op_code = JP_PO; } break; 
-				case PE : { output.op_code = JP_PE; } break; 
+				case C  : { output.op_code = JP_C ; } break;
+				case NC : { output.op_code = JP_NC; } break;
+				case Z  : { output.op_code = JP_Z ; } break;
+				case NZ : { output.op_code = JP_NZ; } break;
+				case P  : { output.op_code = JP_P ; } break;
+				case M  : { output.op_code = JP_M ; } break;
+				case PO : { output.op_code = JP_PO; } break;
+				case PE : { output.op_code = JP_PE; } break;
 				default: break;
 			}
 			set_imm_value(output, str, 2);
 		} break;
 		case CALL: {
 			switch (cc) {
-				case C  : { output.op_code = CALL_C ; } break; 
-				case NC : { output.op_code = CALL_NC; } break; 
-				case Z  : { output.op_code = CALL_Z ; } break; 
-				case NZ : { output.op_code = CALL_NZ; } break; 
-				case P  : { output.op_code = CALL_P ; } break; 
-				case M  : { output.op_code = CALL_M ; } break; 
-				case PO : { output.op_code = CALL_PO; } break; 
-				case PE : { output.op_code = CALL_PE; } break; 
+				case C  : { output.op_code = CALL_C ; } break;
+				case NC : { output.op_code = CALL_NC; } break;
+				case Z  : { output.op_code = CALL_Z ; } break;
+				case NZ : { output.op_code = CALL_NZ; } break;
+				case P  : { output.op_code = CALL_P ; } break;
+				case M  : { output.op_code = CALL_M ; } break;
+				case PO : { output.op_code = CALL_PO; } break;
+				case PE : { output.op_code = CALL_PE; } break;
 				default: break;
 			}
 			set_imm_value(output, str, 2);
@@ -271,7 +271,7 @@ void handle_push_pop(
 	size_t index;
 	bool found = find_in_list(index, str[1], argument_name, ARRAY_LEN(argument_name));
 	using enum ez80_argument_name;
-	
+
 	using enum instruction_enum_start;
 	if (found == false) {
 		return;
@@ -1396,7 +1396,7 @@ void handle_load(
 				case PIX : { output.op_code = LD_PIX_B; } break;
 				case PIY : { output.op_code = LD_PIY_B; } break;
 				default: break;
-			}		
+			}
 		} break;
 		case C: {
 			switch (dst) {

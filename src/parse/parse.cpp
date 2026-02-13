@@ -56,7 +56,7 @@ static void clean_string(string& line) {
 		}
 	}
 	#endif
-	/* remove redundant whitespace */ 
+	/* remove redundant whitespace */
 	if (line.size() >= 1) {
 		string result = "";
 		for (size_t i = 0; i < line.size(); i++) {
@@ -199,17 +199,17 @@ asm_line_type process_first_word(size_t& index, string str) {
 }
 
 vector<string> split_string(const string& input) {
-    vector<string> words;
-    std::istringstream stream(input);
-    string word;
+	vector<string> words;
+	std::istringstream stream(input);
+	string word;
 
-    while (stream >> word) {
+	while (stream >> word) {
 		if (!word.empty()) {
-        	words.push_back(word);
+			words.push_back(word);
 		}
-    }
+	}
 
-    return words;
+	return words;
 }
 
 void parse_line(const string& line, ez80_instruction& output) {
@@ -217,7 +217,7 @@ void parse_line(const string& line, ez80_instruction& output) {
 	output.value = 0;
 	output.op_code = ez80_op_code::UNKNOWN;
 	vector<string> words = split_string(line);
-	
+
 	if (words.empty()) {
 		return;
 	}
@@ -306,7 +306,7 @@ void parse_line(const string& line, ez80_instruction& output) {
 		case XOR     : handle_acc8(output, words, start); break;
 		default: break;
 	}
-} 
+}
 
 bool construct_asm_line(string& line, size_t line_number, asm_line& output) {
 	// is this line a label?

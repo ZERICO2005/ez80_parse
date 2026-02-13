@@ -388,7 +388,7 @@ public:
 // Merge bits
 //------------------------------------------------------------------------------
 
-/** 
+/**
  * @brief assumes that no known bits conflict
  */
 void merge_bits(reg_pair<T> y) {
@@ -411,7 +411,7 @@ void merge_bits(reg_pair<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief sets bits to unknown on conflict
  */
 void merge_bits_favor_unknown(reg_pair<T> y) {
@@ -433,7 +433,7 @@ void merge_bits_favor_unknown(reg_pair<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief preserves bits on conflict
  */
 void merge_bits_preserve(reg_pair<T> y) {
@@ -451,7 +451,7 @@ void merge_bits_preserve(reg_pair<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief overwrites bits on conflict
  */
 void merge_bits_overwrite(reg_pair<T> y) {
@@ -473,7 +473,7 @@ void merge_bits_overwrite(reg_pair<T> y) {
 	}
 }
 
-/** 
+/**
  * @brief sets any bits that differ to unknown
  */
 void merge_bits_intersection(reg_pair<T> y) {

@@ -490,7 +490,7 @@ const ez80_op_code_timing op_code_data[] = {
 	{ez80_op_code::SRA_PHL       , 2, 2, 1, 1, 1},
 	{ez80_op_code::SRA_PIX       , 4, 4, 1, 1, 1},
 	{ez80_op_code::SRA_PIY       , 4, 4, 1, 1, 1},
-	
+
 	{ez80_op_code::SRL_A         , 2, 2, 0, 0, 0},
 	{ez80_op_code::SRL_B         , 2, 2, 0, 0, 0},
 	{ez80_op_code::SRL_C         , 2, 2, 0, 0, 0},
@@ -874,7 +874,7 @@ const ez80_op_code_timing op_code_data[] = {
 	{ez80_op_code::BIT_7_PIY     , 4, 4, 1, 0, 0},
 
 	/* Set bits */
-	
+
 	{ez80_op_code::SET_0_A       , 2, 2, 0, 0, 0},
 	{ez80_op_code::SET_0_B       , 2, 2, 0, 0, 0},
 	{ez80_op_code::SET_0_C       , 2, 2, 0, 0, 0},
@@ -1038,7 +1038,7 @@ const ez80_op_code_timing op_code_data[] = {
 	{ez80_op_code::RES_7_PHL     , 2, 2, 1, 0, 0},
 	{ez80_op_code::RES_7_PIX     , 4, 4, 1, 1, 1},
 	{ez80_op_code::RES_7_PIY     , 4, 4, 1, 1, 1},
-	
+
 	/* IO instructions */
 
 	{ez80_op_code::IN_A_PBC      , 0, 0, 0, 0, 0},

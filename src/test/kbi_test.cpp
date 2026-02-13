@@ -101,7 +101,7 @@ bool test_add_with_carry(kbi8_test& test) {
 		bit_state guess_carry = set_bit_state(carry);
 		kbi8 guess = add_with_carry(x, y, guess_carry);
 
-	
+
 		if (!((truth == guess.get_bits_raw()) && (truth_carry == guess_carry))) {
 			TEST_FAILED();
 			return false;
@@ -342,6 +342,3 @@ bool test_reg_pair() {
 
 	return passed;
 }
-
-
-

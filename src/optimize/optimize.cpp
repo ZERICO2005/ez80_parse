@@ -412,7 +412,7 @@ void optimize_asm(ez80_code_section& program) {
 			case label:
 			{
 				state.set_all_reg_unknown();
-				
+
 				printf("%6zu: %s:\n", current.original_line, current.label.text.c_str());
 			} break;
 			default: break;

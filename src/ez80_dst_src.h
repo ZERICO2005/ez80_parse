@@ -527,7 +527,7 @@ const ez80_dst_src ez80_dst_src_table[] = {
 	{ez80_op_code::SRA_PHL       , ez80_arg::PHL  , ez80_arg::PHL  },
 	{ez80_op_code::SRA_PIX       , ez80_arg::PIX  , ez80_arg::PIX  },
 	{ez80_op_code::SRA_PIY       , ez80_arg::PIY  , ez80_arg::PIY  },
-	
+
 	{ez80_op_code::SRL_A         , ez80_arg::A    , ez80_arg::A    },
 	{ez80_op_code::SRL_B         , ez80_arg::B    , ez80_arg::B    },
 	{ez80_op_code::SRL_C         , ez80_arg::C    , ez80_arg::C    },
@@ -911,7 +911,7 @@ const ez80_dst_src ez80_dst_src_table[] = {
 	{ez80_op_code::BIT_7_PIY     , ez80_arg::NONE , ez80_arg::PIY  },
 
 	/* Set bits */
-	
+
 	{ez80_op_code::SET_0_A       , ez80_arg::A    , ez80_arg::A    },
 	{ez80_op_code::SET_0_B       , ez80_arg::B    , ez80_arg::B    },
 	{ez80_op_code::SET_0_C       , ez80_arg::C    , ez80_arg::C    },
@@ -1075,7 +1075,7 @@ const ez80_dst_src ez80_dst_src_table[] = {
 	{ez80_op_code::RES_7_PHL     , ez80_arg::PHL  , ez80_arg::PHL  },
 	{ez80_op_code::RES_7_PIX     , ez80_arg::PIX  , ez80_arg::PIX  },
 	{ez80_op_code::RES_7_PIY     , ez80_arg::PIY  , ez80_arg::PIY  },
-	
+
 	/* IO instructions */
 
 	{ez80_op_code::IN_A_PBC      , ez80_arg::NONE , ez80_arg::NONE },
